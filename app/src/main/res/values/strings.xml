@@ -1,3 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App Name -->
     <string name="app_name">AviumNotes</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Welcome to AviumNotes</string>
+    <string name="onboarding_subtitle">Your notes, organized beautifully</string>
+    <string name="onboarding_description">Capture your thoughts quickly with our floating bubble feature and organize them efficiently</string>
+
+    <string name="onboarding_feature_1_title">Quick Capture</string>
+    <string name="onboarding_feature_1_desc">Write notes instantly from anywhere with floating bubble</string>
+
+    <string name="onboarding_feature_2_title">Organize Easily</string>
+    <string name="onboarding_feature_2_desc">Categorize and search your notes effortlessly</string>
+
+    <string name="onboarding_feature_3_title">Sync Seamlessly</string>
+    <string name="onboarding_feature_3_desc">Your notes stay with you across Avium OS devices</string>
+
+    <string name="onboarding_get_started">Get Started</string>
+    <string name="onboarding_skip">Skip</string>
+
+    <!-- Permission -->
+    <string name="permission_overlay_title">Enable Floating Bubble</string>
+    <string name="permission_overlay_description">To use the floating bubble feature, we need permission to display over other apps</string>
+    <string name="permission_overlay_button">Grant Permission</string>
+    <string name="permission_overlay_later">Maybe Later</string>
+    <string name="permission_overlay_denied">Overlay permission is required for floating bubble feature</string>
+
+    <!-- Main Screen -->
+    <string name="main_title">Notes</string>
+    <string name="main_search">Search notes</string>
+    <string name="main_add_note">New Note</string>
+    <string name="main_empty_notes">No notes yet</string>
+    <string name="main_empty_notes_desc">Tap + to create your first note</string>
+
+    <!-- Note Editor -->
+    <string name="note_title_hint">Title</string>
+    <string name="note_content_hint">Start typing your note…</string>
+    <string name="note_save">Save</string>
+    <string name="note_delete">Delete</string>
+    <string name="note_share">Share</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_floating_bubble">Floating Bubble</string>
+    <string name="settings_floating_bubble_desc">Enable quick note capture from anywhere</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version</string>
+
+    <!-- Common -->
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="done">Done</string>
+
+    <!-- Note Editor -->
+    <string name="note_editor_new_note">New Note</string>
+    <string name="note_editor_edit_note">Edit Note</string>
+    <string name="note_color">Note Color</string>
+    <string name="note_created">Created: %1$s</string>
+    <string name="note_modified">Modified: %1$s</string>
+    <string name="note_discard_changes">Discard Changes?</string>
+    <string name="note_discard_message">You have unsaved changes. Do you want to discard them?</string>
+    <string name="discard">Discard</string>
+    <string name="keep_editing">Keep Editing</string>
+    <string name="note_saved">Note saved</string>
+
+    <!-- Color Picker -->
+    <string name="color_white">White</string>
+    <string name="color_red">Red</string>
+    <string name="color_orange">Orange</string>
+    <string name="color_yellow">Yellow</string>
+    <string name="color_green">Green</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_purple">Purple</string>
+    <string name="color_pink">Pink</string>
+
 </resources>
