@@ -52,69 +52,68 @@ fun OnboardingScreen(
         )
     )
 
-    Scaffold { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp)
+            .statusBarsPadding(),  // Add padding for status bar
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Skip button
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
         ) {
-            // Skip button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = onOnboardingComplete) {
-                    Text(stringResource(R.string.onboarding_skip))
+            TextButton(onClick = onOnboardingComplete) {
+                Text(stringResource(R.string.onboarding_skip))
+            }
+        }
+
+        // Pager
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.weight(1f)
+        ) { page ->
+            OnboardingPage(feature = features[page])
+        }
+
+        // Indicators
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            repeat(4) { index ->
+                val color = if (pagerState.currentPage == index) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
                 }
-            }
-
-            // Pager
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.weight(1f)
-            ) { page ->
-                OnboardingPage(feature = features[page])
-            }
-
-            // Indicators
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(16.dp)
-            ) {
-                repeat(4) { index ->
-                    val color = if (pagerState.currentPage == index) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    }
-                    Box(
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .size(8.dp)
-                            .background(color, shape = CircleShape)
-                    )
-                }
-            }
-
-            // Get Started button
-            Button(
-                onClick = { showPermissionDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-                    .height(56.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.onboarding_get_started),
-                    style = MaterialTheme.typography.titleMedium
+                Box(
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .size(8.dp)
+                        .background(color, shape = CircleShape)
                 )
             }
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
+
+        // Get Started button
+        Button(
+            onClick = { showPermissionDialog = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp)
+                .height(56.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.onboarding_get_started),
+                style = MaterialTheme.typography.titleMedium
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
     }
 
     // Permission Dialog

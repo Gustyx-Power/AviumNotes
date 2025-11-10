@@ -40,24 +40,30 @@ fun MainScreen(
     val context = LocalContext.current
     var showMenu by remember { mutableStateOf(false) }
     var isBubbleEnabled by remember { mutableStateOf(false) }
+    var isSearchActive by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    if (searchQuery.isEmpty()) {
-                        Text(stringResource(R.string.main_title))
-                    } else {
+                    if (isSearchActive) {
                         SearchBar(
                             query = searchQuery,
                             onQueryChange = onSearchQueryChange,
-                            onClearClick = { onSearchQueryChange("") }
+                            onClearClick = {
+                                onSearchQueryChange("")
+                                isSearchActive = false
+                            }
                         )
+                    } else {
+                        Text(stringResource(R.string.main_title))
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Search action */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    if (!isSearchActive) {
+                        IconButton(onClick = { isSearchActive = true }) {
+                            Icon(Icons.Default.Search, contentDescription = "Search")
+                        }
                     }
                     IconButton(onClick = { showMenu = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "Menu")
@@ -130,6 +136,7 @@ fun MainScreen(
         }
     }
 }
+
 
 @Composable
 fun NoteCard(

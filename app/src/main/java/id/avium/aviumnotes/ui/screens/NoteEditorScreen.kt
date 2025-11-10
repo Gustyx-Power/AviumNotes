@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -22,6 +23,15 @@ import id.avium.aviumnotes.ui.components.ColorPickerDialog
 import id.avium.aviumnotes.ui.theme.NoteColors
 import java.text.SimpleDateFormat
 import java.util.*
+
+// Helper function to determine text color based on background luminance
+fun getContrastColor(backgroundColor: Color): Color {
+    return if (backgroundColor.luminance() > 0.5f) {
+        Color.Black  // Light background, use dark text
+    } else {
+        Color.White  // Dark background, use light text
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,16 +60,15 @@ fun NoteEditorScreen(
 
     val isNewNote = note == null
 
+    // Dynamic text color based on background
+    val textColor = remember(noteColor) { getContrastColor(noteColor) }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        if (isNewNote)
-                            stringResource(R.string.note_editor_new_note)
-                        else
-                            stringResource(R.string.note_editor_edit_note)
-                    )
+                    // Empty title to remove "AviumNotes" header
+                    Text("")
                 },
                 navigationIcon = {
                     IconButton(
@@ -73,16 +82,18 @@ fun NoteEditorScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = textColor
                         )
                     }
                 },
                 actions = {
+                    // Color picker button with visible icon
                     IconButton(onClick = { showColorPicker = true }) {
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = stringResource(R.string.note_color),
-                            tint = noteColor
+                            tint = textColor
                         )
                     }
 
@@ -90,7 +101,8 @@ fun NoteEditorScreen(
                         IconButton(onClick = { showMoreMenu = true }) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
-                                contentDescription = "More"
+                                contentDescription = "More",
+                                tint = textColor
                             )
                         }
 
@@ -122,7 +134,10 @@ fun NoteEditorScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = noteColor
+                    containerColor = noteColor,
+                    navigationIconContentColor = textColor,
+                    titleContentColor = textColor,
+                    actionIconContentColor = textColor
                 )
             )
         },
@@ -156,7 +171,7 @@ fun NoteEditorScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Title TextField
+            // Title TextField with dynamic text color
             TextField(
                 value = title,
                 onValueChange = { title = it },
@@ -164,18 +179,23 @@ fun NoteEditorScreen(
                 placeholder = {
                     Text(
                         text = stringResource(R.string.note_title_hint),
-                        style = MaterialTheme.typography.headlineMedium
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = textColor.copy(alpha = 0.6f)
                     )
                 },
                 textStyle = MaterialTheme.typography.headlineMedium.copy(
-                    fontSize = 24.sp
+                    fontSize = 24.sp,
+                    color = textColor
                 ),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
                     disabledContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedTextColor = textColor,
+                    unfocusedTextColor = textColor,
+                    cursorColor = textColor
                 ),
                 singleLine = false,
                 maxLines = 3
@@ -183,10 +203,10 @@ fun NoteEditorScreen(
 
             Divider(
                 modifier = Modifier.padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                color = textColor.copy(alpha = 0.3f)
             )
 
-            // Content TextField
+            // Content TextField with dynamic text color
             TextField(
                 value = content,
                 onValueChange = { content = it },
@@ -197,23 +217,28 @@ fun NoteEditorScreen(
                 placeholder = {
                     Text(
                         text = stringResource(R.string.note_content_hint),
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = textColor.copy(alpha = 0.6f)
                     )
                 },
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
                     fontSize = 16.sp,
-                    lineHeight = 24.sp
+                    lineHeight = 24.sp,
+                    color = textColor
                 ),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
                     disabledContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedTextColor = textColor,
+                    unfocusedTextColor = textColor,
+                    cursorColor = textColor
                 )
             )
 
-            // Metadata
+            // Metadata with dynamic text color
             if (!isNewNote && note != null) {
                 Column(
                     modifier = Modifier
@@ -223,12 +248,12 @@ fun NoteEditorScreen(
                     Text(
                         text = stringResource(R.string.note_created, formatDate(note.createdAt)),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = textColor.copy(alpha = 0.7f)
                     )
                     Text(
                         text = stringResource(R.string.note_modified, formatDate(note.updatedAt)),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = textColor.copy(alpha = 0.7f)
                     )
                 }
             }
