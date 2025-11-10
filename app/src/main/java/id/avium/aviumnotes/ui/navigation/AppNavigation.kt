@@ -79,32 +79,42 @@ fun AppNavigation() {
             )
         ) { backStackEntry ->
             val noteId = backStackEntry.arguments?.getString("noteId")
+
+            // Load note from repository
             var currentNote by remember { mutableStateOf<id.avium.aviumnotes.data.local.entity.Note?>(null) }
+            var isLoading by remember { mutableStateOf(true) }
 
             LaunchedEffect(noteId) {
-                if (noteId != "new") {
-                    currentNote = repository.getNoteById(noteId?.toLongOrNull() ?: 0)
+                isLoading = true
+                currentNote = if (noteId != "new") {
+                    repository.getNoteById(noteId?.toLongOrNull() ?: 0)
+                } else {
+                    null
                 }
+                isLoading = false
             }
 
-            NoteEditorScreen(
-                note = currentNote,
-                onSaveNote = { note ->
-                    coroutineScope.launch {
-                        if (note.id == 0L) {
-                            viewModel.insertNote(note)
-                        } else {
-                            viewModel.updateNote(note)
+            // Show loading or editor screen
+            if (!isLoading) {
+                NoteEditorScreen(
+                    note = currentNote,
+                    onSaveNote = { note ->
+                        coroutineScope.launch {
+                            if (note.id == 0L) {
+                                viewModel.insertNote(note)
+                            } else {
+                                viewModel.updateNote(note)
+                            }
                         }
+                    },
+                    onDeleteNote = {
+                        currentNote?.let { viewModel.deleteNote(it) }
+                    },
+                    onNavigateBack = {
+                        navController.popBackStack()
                     }
-                },
-                onDeleteNote = {
-                    currentNote?.let { viewModel.deleteNote(it) }
-                },
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
+                )
+            }
         }
     }
 }
