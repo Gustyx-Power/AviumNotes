@@ -2,19 +2,16 @@ package id.avium.aviumnotes.ui.screens
 
 import android.content.Intent
 import android.provider.Settings
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -23,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import id.avium.aviumnotes.R
 import id.avium.aviumnotes.data.local.entity.Note
 import id.avium.aviumnotes.service.FloatingBubbleService
+import id.avium.aviumnotes.ui.utils.getContrastColor  // Import dari ColorUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -137,7 +135,6 @@ fun MainScreen(
     }
 }
 
-
 @Composable
 fun NoteCard(
     note: Note,
@@ -147,13 +144,16 @@ fun NoteCard(
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
+    val backgroundColor = Color(note.color)
+    val textColor = remember(backgroundColor) { getContrastColor(backgroundColor) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(note.color)
+            containerColor = backgroundColor
         )
     ) {
         Column(
@@ -171,7 +171,8 @@ fun NoteCard(
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    color = textColor
                 )
 
                 Row {
@@ -182,14 +183,15 @@ fun NoteCard(
                             tint = if (note.isPinned)
                                 MaterialTheme.colorScheme.primary
                             else
-                                MaterialTheme.colorScheme.onSurfaceVariant
+                                textColor.copy(alpha = 0.6f)
                         )
                     }
 
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete"
+                            contentDescription = "Delete",
+                            tint = textColor.copy(alpha = 0.8f)
                         )
                     }
                 }
@@ -201,7 +203,7 @@ fun NoteCard(
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = textColor.copy(alpha = 0.8f),
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
@@ -209,7 +211,7 @@ fun NoteCard(
             Text(
                 text = formatDate(note.updatedAt),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = textColor.copy(alpha = 0.6f),
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
