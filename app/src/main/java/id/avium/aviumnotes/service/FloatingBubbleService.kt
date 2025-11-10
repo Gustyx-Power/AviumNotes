@@ -15,15 +15,73 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.ImageView
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.savedstate.SavedStateRegistry
+import androidx.savedstate.SavedStateRegistryController
+import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import id.avium.aviumnotes.MainActivity
 import id.avium.aviumnotes.R
+import id.avium.aviumnotes.data.local.AppDatabase
+import id.avium.aviumnotes.data.local.entity.Note
+import id.avium.aviumnotes.data.repository.NoteRepository
+import id.avium.aviumnotes.ui.theme.AviumNotesTheme
+import id.avium.aviumnotes.ui.utils.getContrastColor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
+import java.text.SimpleDateFormat
+import java.util.*
 
-class FloatingBubbleService : Service() {
+class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
     private lateinit var windowManager: WindowManager
-    private var floatingView: View? = null
-    private var params: WindowManager.LayoutParams? = null
+    private var bubbleView: View? = null
+    private var expandedView: ComposeView? = null
+    private var bubbleParams: WindowManager.LayoutParams? = null
+    private var expandedParams: WindowManager.LayoutParams? = null
+
+    private var isExpanded = false
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private lateinit var repository: NoteRepository
+
+    // Lifecycle
+    private val lifecycleRegistry = LifecycleRegistry(this)
+    override val lifecycle: Lifecycle get() = lifecycleRegistry
+
+    // ViewModelStore
+    private val store = ViewModelStore()
+    override val viewModelStore: ViewModelStore get() = store
+
+    // SavedStateRegistry
+    private val savedStateRegistryController = SavedStateRegistryController.create(this)
+    override val savedStateRegistry: SavedStateRegistry
+        get() = savedStateRegistryController.savedStateRegistry
 
     private var initialX = 0
     private var initialY = 0
@@ -32,13 +90,21 @@ class FloatingBubbleService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        savedStateRegistryController.performRestore(null)
+        lifecycleRegistry.currentState = Lifecycle.State.CREATED
+
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        repository = NoteRepository(AppDatabase.getInstance(this).noteDao())
         createNotificationChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> startForegroundService()
+            ACTION_START -> {
+                lifecycleRegistry.currentState = Lifecycle.State.STARTED
+                lifecycleRegistry.currentState = Lifecycle.State.RESUMED
+                startForegroundService()
+            }
             ACTION_STOP -> stopService()
         }
         return START_STICKY
@@ -51,12 +117,12 @@ class FloatingBubbleService : Service() {
     }
 
     private fun showFloatingBubble() {
-        if (floatingView != null) return
+        if (bubbleView != null) return
 
-        floatingView = LayoutInflater.from(this)
+        bubbleView = LayoutInflater.from(this)
             .inflate(R.layout.layout_floating_bubble, null)
 
-        params = WindowManager.LayoutParams(
+        bubbleParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -72,9 +138,9 @@ class FloatingBubbleService : Service() {
             y = 100
         }
 
-        windowManager.addView(floatingView, params)
+        windowManager.addView(bubbleView, bubbleParams)
 
-        floatingView?.findViewById<ImageView>(R.id.bubble_icon)?.apply {
+        bubbleView?.findViewById<ImageView>(R.id.bubble_icon)?.apply {
             setOnTouchListener(object : View.OnTouchListener {
                 private var moving = false
 
@@ -82,8 +148,8 @@ class FloatingBubbleService : Service() {
                     when (event?.action) {
                         MotionEvent.ACTION_DOWN -> {
                             moving = false
-                            initialX = params?.x ?: 0
-                            initialY = params?.y ?: 0
+                            initialX = bubbleParams?.x ?: 0
+                            initialY = bubbleParams?.y ?: 0
                             initialTouchX = event.rawX
                             initialTouchY = event.rawY
                             return true
@@ -96,19 +162,14 @@ class FloatingBubbleService : Service() {
                                 moving = true
                             }
 
-                            params?.x = initialX + deltaX
-                            params?.y = initialY + deltaY
-                            windowManager.updateViewLayout(floatingView, params)
+                            bubbleParams?.x = initialX + deltaX
+                            bubbleParams?.y = initialY + deltaY
+                            windowManager.updateViewLayout(bubbleView, bubbleParams)
                             return true
                         }
                         MotionEvent.ACTION_UP -> {
                             if (!moving) {
-                                // Open app for quick note
-                                val intent = Intent(this@FloatingBubbleService, MainActivity::class.java)
-                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                                        Intent.FLAG_ACTIVITY_CLEAR_TOP
-                                intent.putExtra("quick_note", true)
-                                startActivity(intent)
+                                toggleExpandedView()
                             }
                             return true
                         }
@@ -119,10 +180,78 @@ class FloatingBubbleService : Service() {
         }
     }
 
+    private fun toggleExpandedView() {
+        if (isExpanded) {
+            hideExpandedView()
+        } else {
+            showExpandedView()
+        }
+    }
+
+    private fun showExpandedView() {
+        if (expandedView != null) return
+
+        expandedView = ComposeView(this).apply {
+            setViewTreeLifecycleOwner(this@FloatingBubbleService)
+            setViewTreeViewModelStoreOwner(this@FloatingBubbleService)
+            setViewTreeSavedStateRegistryOwner(this@FloatingBubbleService)
+
+            setContent {
+                AviumNotesTheme {
+                    FloatingNotesListContent(
+                        repository = repository,
+                        onNoteClick = { noteId ->
+                            openNoteInApp(noteId)
+                        },
+                        onClose = {
+                            hideExpandedView()
+                        }
+                    )
+                }
+            }
+        }
+
+        expandedParams = WindowManager.LayoutParams(
+            (windowManager.defaultDisplay.width * 0.9).toInt(),
+            (windowManager.defaultDisplay.height * 0.7).toInt(),
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            } else {
+                WindowManager.LayoutParams.TYPE_PHONE
+            },
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.CENTER
+        }
+
+        windowManager.addView(expandedView, expandedParams)
+        isExpanded = true
+    }
+
+    private fun hideExpandedView() {
+        expandedView?.let {
+            windowManager.removeView(it)
+            expandedView = null
+        }
+        isExpanded = false
+    }
+
+    private fun openNoteInApp(noteId: Long) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("note_id", noteId)
+        }
+        startActivity(intent)
+        hideExpandedView()
+    }
+
     private fun stopService() {
-        if (floatingView != null) {
-            windowManager.removeView(floatingView)
-            floatingView = null
+        hideExpandedView()
+        if (bubbleView != null) {
+            windowManager.removeView(bubbleView)
+            bubbleView = null
         }
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -160,7 +289,7 @@ class FloatingBubbleService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
-            .setContentText("Tap bubble to create quick note")
+            .setContentText("Tap bubble to view notes")
             .setSmallIcon(R.drawable.ic_note)
             .setContentIntent(pendingIntent)
             .addAction(R.drawable.ic_close, "Stop", stopPendingIntent)
@@ -172,8 +301,11 @@ class FloatingBubbleService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (floatingView != null) {
-            windowManager.removeView(floatingView)
+        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
+        serviceScope.cancel()
+        hideExpandedView()
+        if (bubbleView != null) {
+            windowManager.removeView(bubbleView)
         }
     }
 
@@ -183,4 +315,151 @@ class FloatingBubbleService : Service() {
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
     }
+}
+
+@Composable
+fun FloatingNotesListContent(
+    repository: NoteRepository,
+    onNoteClick: (Long) -> Unit,
+    onClose: () -> Unit
+) {
+    var notes by remember { mutableStateOf<List<Note>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        notes = repository.getAllNotes().first()
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 8.dp
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            // Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "My Notes",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+
+                IconButton(onClick = onClose) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close"
+                    )
+                }
+            }
+
+            Divider()
+
+            // Notes list
+            if (notes.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "No notes yet",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(notes, key = { it.id }) { note ->
+                        FloatingNoteCard(
+                            note = note,
+                            onClick = { onNoteClick(note.id) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FloatingNoteCard(
+    note: Note,
+    onClick: () -> Unit
+) {
+    val backgroundColor = Color(note.color)
+    val textColor = remember(backgroundColor) { getContrastColor(backgroundColor) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = backgroundColor
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Text(
+                text = note.title.ifEmpty { "Untitled" },
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = textColor
+            )
+
+            if (note.content.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = note.content,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = textColor.copy(alpha = 0.8f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = formatDate(note.updatedAt),
+                style = MaterialTheme.typography.labelSmall,
+                color = textColor.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+private fun formatDate(timestamp: Long): String {
+    val sdf = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault())
+    return sdf.format(Date(timestamp))
 }
