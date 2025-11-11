@@ -1,7 +1,11 @@
 package id.avium.aviumnotes.ui.navigation
 
-import android.content.Context
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -9,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import id.avium.aviumnotes.data.local.AppDatabase
+import id.avium.aviumnotes.data.preferences.PreferencesManager
 import id.avium.aviumnotes.data.repository.NoteRepository
 import id.avium.aviumnotes.ui.screens.MainScreen
 import id.avium.aviumnotes.ui.screens.NoteEditorScreen
@@ -22,7 +27,10 @@ import kotlinx.coroutines.launch
 fun AppNavigation() {
     val navController = rememberNavController()
     val context = LocalContext.current
-    var isFirstLaunch by remember { mutableStateOf(true) }
+
+    // Initialize PreferencesManager
+    val preferencesManager = remember { PreferencesManager(context) }
+    val isOnboardingCompleted by preferencesManager.isOnboardingCompleted.collectAsState(initial = null)
 
     // Initialize ViewModel
     val database = remember { AppDatabase.getInstance(context) }
@@ -35,16 +43,29 @@ fun AppNavigation() {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
+    // Show loading while checking onboarding status
+    if (isOnboardingCompleted == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     NavHost(
         navController = navController,
-        startDestination = if (isFirstLaunch) "onboarding" else "main"
+        startDestination = if (isOnboardingCompleted == true) "main" else "onboarding"
     ) {
         composable("onboarding") {
             OnboardingScreen(
                 onOnboardingComplete = {
-                    isFirstLaunch = false
-                    navController.navigate("main") {
-                        popUpTo("onboarding") { inclusive = true }
+                    coroutineScope.launch {
+                        preferencesManager.setOnboardingCompleted(true)
+                        navController.navigate("main") {
+                            popUpTo("onboarding") { inclusive = true }
+                        }
                     }
                 }
             )
@@ -114,6 +135,14 @@ fun AppNavigation() {
                         navController.popBackStack()
                     }
                 )
+            } else {
+                // Loading indicator while fetching note data
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
             }
         }
     }
