@@ -28,7 +28,7 @@
     <string name="permission_overlay_denied">Overlay permission is required for floating bubble feature</string>
 
     <!-- Main Screen -->
-    <string name="main_title">Notes</string>
+    <string name="main_title">Avium Notes</string>
     <string name="main_search">Search notes</string>
     <string name="main_add_note">New Note</string>
     <string name="main_empty_notes">No notes yet</string>
