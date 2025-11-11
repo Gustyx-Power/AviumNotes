@@ -1,17 +1,20 @@
 package id.avium.aviumnotes.service
 
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
-import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.SystemClock
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -67,14 +70,12 @@ import java.util.*
 class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
     private lateinit var windowManager: WindowManager
-    private lateinit var clipboardManager: ClipboardManager
     private var bubbleView: View? = null
     private var expandedView: ComposeView? = null
     private var bubbleParams: WindowManager.LayoutParams? = null
     private var expandedParams: WindowManager.LayoutParams? = null
 
     private var isExpanded = false
-    private var isTemporaryMode = false
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var repository: NoteRepository
     private val handler = Handler(Looper.getMainLooper())
@@ -100,12 +101,15 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
         lifecycleRegistry.currentState = Lifecycle.State.CREATED
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
-        clipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         repository = NoteRepository(AppDatabase.getInstance(this).noteDao())
         createNotificationChannel()
+
+        Log.d(TAG, "Service created")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d(TAG, "onStartCommand: action=${intent?.action}")
+
         when (intent?.action) {
             ACTION_START -> {
                 lifecycleRegistry.currentState = Lifecycle.State.STARTED
@@ -114,31 +118,36 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
             }
             ACTION_STOP -> stopService()
             ACTION_SHOW -> showBubble()
-            ACTION_SHOW_TEMPORARY -> showBubbleTemporarily()
         }
         return START_STICKY
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        Log.d(TAG, "Task removed, scheduling restart")
+
+        val restartServiceIntent = Intent(applicationContext, FloatingBubbleService::class.java)
+        restartServiceIntent.action = ACTION_START
+        val restartServicePendingIntent = PendingIntent.getService(
+            applicationContext,
+            1,
+            restartServiceIntent,
+            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val alarmService = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        alarmService.set(
+            AlarmManager.ELAPSED_REALTIME,
+            SystemClock.elapsedRealtime() + 1000,
+            restartServicePendingIntent
+        )
     }
 
     private fun startForegroundService() {
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
         showFloatingBubble(false)
-    }
-
-    private fun showBubbleTemporarily() {
-        isTemporaryMode = true
-        if (!isForegroundServiceRunning()) {
-            val notification = createNotification()
-            startForeground(NOTIFICATION_ID, notification)
-        }
-        showFloatingBubble(true)
-
-        handler.postDelayed({
-            if (isTemporaryMode && !isExpanded) {
-                hideBubble()
-                isTemporaryMode = false
-            }
-        }, 5000)
+        Log.d(TAG, "Service started in foreground")
     }
 
     private fun showFloatingBubble(fixedPosition: Boolean) {
@@ -184,34 +193,24 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
                             initialY = bubbleParams?.y ?: 0
                             initialTouchX = event.rawX
                             initialTouchY = event.rawY
-
-                            if (isTemporaryMode) {
-                                handler.removeCallbacksAndMessages(null)
-                            }
                             return true
                         }
                         MotionEvent.ACTION_MOVE -> {
-                            if (!isTemporaryMode) {
-                                val deltaX = (event.rawX - initialTouchX).toInt()
-                                val deltaY = (event.rawY - initialTouchY).toInt()
+                            val deltaX = (event.rawX - initialTouchX).toInt()
+                            val deltaY = (event.rawY - initialTouchY).toInt()
 
-                                if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-                                    moving = true
-                                }
-
-                                bubbleParams?.x = initialX + deltaX
-                                bubbleParams?.y = initialY + deltaY
-                                windowManager.updateViewLayout(bubbleView, bubbleParams)
+                            if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                                moving = true
                             }
+
+                            bubbleParams?.x = initialX + deltaX
+                            bubbleParams?.y = initialY + deltaY
+                            windowManager.updateViewLayout(bubbleView, bubbleParams)
                             return true
                         }
                         MotionEvent.ACTION_UP -> {
                             if (!moving) {
-                                if (isTemporaryMode) {
-                                    openNoteWithClipboard()
-                                } else {
-                                    toggleExpandedView()
-                                }
+                                toggleExpandedView()
                             }
                             return true
                         }
@@ -221,21 +220,6 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
             })
         }
     }
-
-    private fun openNoteWithClipboard() {
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP
-            putExtra("from_clipboard_broadcast", true)
-            putExtra("note_id", -2L)
-        }
-        startActivity(intent)
-
-        hideBubble()
-        isTemporaryMode = false
-    }
-
 
     private fun toggleExpandedView() {
         if (isExpanded) {
@@ -330,10 +314,7 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
         handler.removeCallbacksAndMessages(null)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
-    }
-
-    private fun isForegroundServiceRunning(): Boolean {
-        return bubbleView != null
+        Log.d(TAG, "Service stopped")
     }
 
     private fun createNotificationChannel() {
@@ -385,15 +366,16 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
         handler.removeCallbacksAndMessages(null)
         hideExpandedView()
         hideBubble()
+        Log.d(TAG, "Service destroyed")
     }
 
     companion object {
+        private const val TAG = "FloatingBubbleService"
         const val CHANNEL_ID = "floating_bubble_channel"
         const val NOTIFICATION_ID = 1
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
         const val ACTION_SHOW = "ACTION_SHOW"
-        const val ACTION_SHOW_TEMPORARY = "ACTION_SHOW_TEMPORARY"
     }
 }
 
