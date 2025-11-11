@@ -5,10 +5,13 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.ClipboardManager
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -23,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -63,24 +67,24 @@ import java.util.*
 class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
 
     private lateinit var windowManager: WindowManager
+    private lateinit var clipboardManager: ClipboardManager
     private var bubbleView: View? = null
     private var expandedView: ComposeView? = null
     private var bubbleParams: WindowManager.LayoutParams? = null
     private var expandedParams: WindowManager.LayoutParams? = null
 
     private var isExpanded = false
+    private var isTemporaryMode = false
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var repository: NoteRepository
+    private val handler = Handler(Looper.getMainLooper())
 
-    // Lifecycle
     private val lifecycleRegistry = LifecycleRegistry(this)
     override val lifecycle: Lifecycle get() = lifecycleRegistry
 
-    // ViewModelStore
     private val store = ViewModelStore()
     override val viewModelStore: ViewModelStore get() = store
 
-    // SavedStateRegistry
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     override val savedStateRegistry: SavedStateRegistry
         get() = savedStateRegistryController.savedStateRegistry
@@ -96,6 +100,7 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
         lifecycleRegistry.currentState = Lifecycle.State.CREATED
 
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        clipboardManager = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         repository = NoteRepository(AppDatabase.getInstance(this).noteDao())
         createNotificationChannel()
     }
@@ -109,6 +114,7 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
             }
             ACTION_STOP -> stopService()
             ACTION_SHOW -> showBubble()
+            ACTION_SHOW_TEMPORARY -> showBubbleTemporarily()
         }
         return START_STICKY
     }
@@ -116,14 +122,32 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
     private fun startForegroundService() {
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
-        showFloatingBubble()
+        showFloatingBubble(false)
     }
 
-    private fun showFloatingBubble() {
+    private fun showBubbleTemporarily() {
+        isTemporaryMode = true
+        if (!isForegroundServiceRunning()) {
+            val notification = createNotification()
+            startForeground(NOTIFICATION_ID, notification)
+        }
+        showFloatingBubble(true)
+
+        handler.postDelayed({
+            if (isTemporaryMode && !isExpanded) {
+                hideBubble()
+                isTemporaryMode = false
+            }
+        }, 5000)
+    }
+
+    private fun showFloatingBubble(fixedPosition: Boolean) {
         if (bubbleView != null) return
 
         bubbleView = LayoutInflater.from(this)
             .inflate(R.layout.layout_floating_bubble, null)
+
+        val displayMetrics = resources.displayMetrics
 
         bubbleParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -137,8 +161,13 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = 0
-            y = 100
+            if (fixedPosition) {
+                x = displayMetrics.widthPixels - 200
+                y = displayMetrics.heightPixels - 300
+            } else {
+                x = 0
+                y = 100
+            }
         }
 
         windowManager.addView(bubbleView, bubbleParams)
@@ -155,24 +184,34 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
                             initialY = bubbleParams?.y ?: 0
                             initialTouchX = event.rawX
                             initialTouchY = event.rawY
+
+                            if (isTemporaryMode) {
+                                handler.removeCallbacksAndMessages(null)
+                            }
                             return true
                         }
                         MotionEvent.ACTION_MOVE -> {
-                            val deltaX = (event.rawX - initialTouchX).toInt()
-                            val deltaY = (event.rawY - initialTouchY).toInt()
+                            if (!isTemporaryMode) {
+                                val deltaX = (event.rawX - initialTouchX).toInt()
+                                val deltaY = (event.rawY - initialTouchY).toInt()
 
-                            if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
-                                moving = true
+                                if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                                    moving = true
+                                }
+
+                                bubbleParams?.x = initialX + deltaX
+                                bubbleParams?.y = initialY + deltaY
+                                windowManager.updateViewLayout(bubbleView, bubbleParams)
                             }
-
-                            bubbleParams?.x = initialX + deltaX
-                            bubbleParams?.y = initialY + deltaY
-                            windowManager.updateViewLayout(bubbleView, bubbleParams)
                             return true
                         }
                         MotionEvent.ACTION_UP -> {
                             if (!moving) {
-                                toggleExpandedView()
+                                if (isTemporaryMode) {
+                                    openNoteWithClipboard()
+                                } else {
+                                    toggleExpandedView()
+                                }
                             }
                             return true
                         }
@@ -182,6 +221,21 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
             })
         }
     }
+
+    private fun openNoteWithClipboard() {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("from_clipboard_broadcast", true)
+            putExtra("note_id", -2L)
+        }
+        startActivity(intent)
+
+        hideBubble()
+        isTemporaryMode = false
+    }
+
 
     private fun toggleExpandedView() {
         if (isExpanded) {
@@ -255,8 +309,6 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
         }
         startActivity(intent)
         hideExpandedView()
-        // Auto hide bubble after opening note
-        hideBubble()
     }
 
     private fun hideBubble() {
@@ -268,15 +320,20 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
 
     private fun showBubble() {
         if (bubbleView == null) {
-            showFloatingBubble()
+            showFloatingBubble(false)
         }
     }
 
     private fun stopService() {
         hideExpandedView()
         hideBubble()
+        handler.removeCallbacksAndMessages(null)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    private fun isForegroundServiceRunning(): Boolean {
+        return bubbleView != null
     }
 
     private fun createNotificationChannel() {
@@ -325,6 +382,7 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
         super.onDestroy()
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
         serviceScope.cancel()
+        handler.removeCallbacksAndMessages(null)
         hideExpandedView()
         hideBubble()
     }
@@ -335,6 +393,7 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
         const val ACTION_SHOW = "ACTION_SHOW"
+        const val ACTION_SHOW_TEMPORARY = "ACTION_SHOW_TEMPORARY"
     }
 }
 
@@ -369,7 +428,6 @@ fun FloatingNotesListContent(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -384,22 +442,18 @@ fun FloatingNotesListContent(
                 )
 
                 Row {
-                    // Hide bubble button (dengan warna merah)
-                    IconButton(
-                        onClick = onHideBubble
-                    ) {
+                    IconButton(onClick = onHideBubble) {
                         Icon(
-                            imageVector = Icons.Default.Close,
+                            imageVector = Icons.Default.VisibilityOff,
                             contentDescription = "Hide bubble",
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
 
-                    // Close list button
                     IconButton(onClick = onClose) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close"
+                            contentDescription = "Close list"
                         )
                     }
                 }
@@ -407,7 +461,6 @@ fun FloatingNotesListContent(
 
             Divider()
 
-            // Content
             if (isLoading) {
                 Box(
                     modifier = Modifier
