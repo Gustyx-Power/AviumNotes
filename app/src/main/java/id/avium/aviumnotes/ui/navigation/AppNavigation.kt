@@ -114,6 +114,15 @@ fun AppNavigation() {
                 onTogglePin = { id, isPinned ->
                     viewModel.togglePinStatus(id, isPinned)
                 },
+                onResizeCard = { note, newSpan ->
+                    coroutineScope.launch {
+                        val updatedNote = note.copy(
+                            spanCount = newSpan,
+                            updatedAt = System.currentTimeMillis()
+                        )
+                        viewModel.updateNote(updatedNote)
+                    }
+                },
                 onNavigateToSettings = {
                     navController.navigate("settings")
                 }
