@@ -11,27 +11,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.avium.aviumnotes.R
 import id.avium.aviumnotes.data.local.entity.Note
+import id.avium.aviumnotes.data.preferences.PreferencesManager
 import id.avium.aviumnotes.ui.components.ColorPickerDialog
 import id.avium.aviumnotes.ui.theme.NoteColors
+import id.avium.aviumnotes.ui.utils.getContrastColor
 import java.text.SimpleDateFormat
 import java.util.*
-
-// Helper function to determine text color based on background luminance
-fun getContrastColor(backgroundColor: Color): Color {
-    return if (backgroundColor.luminance() > 0.5f) {
-        Color.Black  // Light background, use dark text
-    } else {
-        Color.White  // Dark background, use light text
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,35 +32,35 @@ fun NoteEditorScreen(
     onDeleteNote: () -> Unit,
     onNavigateBack: () -> Unit
 ) {
-    var title by remember { mutableStateOf(note?.title ?: "") }
-    var content by remember { mutableStateOf(note?.content ?: "") }
-    var noteColor by remember {
-        mutableStateOf(Color(note?.color ?: NoteColors.White.hashCode()))
+    val context = LocalContext.current
+    val preferencesManager = remember { PreferencesManager(context) }
+    val defaultNoteColor by preferencesManager.defaultNoteColor.collectAsState(
+        initial = NoteColors.White.hashCode()
+    )
+
+    var title by remember(note) { mutableStateOf(note?.title ?: "") }
+    var content by remember(note) { mutableStateOf(note?.content ?: "") }
+    var noteColor by remember(note, defaultNoteColor) {
+        mutableStateOf(Color(note?.color ?: defaultNoteColor))
     }
     var showColorPicker by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showDiscardDialog by remember { mutableStateOf(false) }
     var showMoreMenu by remember { mutableStateOf(false) }
 
-    val context = LocalContext.current
     val hasChanges = remember(title, content, noteColor) {
         title != (note?.title ?: "") ||
                 content != (note?.content ?: "") ||
-                noteColor.hashCode() != (note?.color ?: NoteColors.White.hashCode())
+                noteColor.hashCode() != (note?.color ?: defaultNoteColor)
     }
 
     val isNewNote = note == null
-
-    // Dynamic text color based on background
     val textColor = remember(noteColor) { getContrastColor(noteColor) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    // Empty title to remove "AviumNotes" header
-                    Text("")
-                },
+                title = { Text("") },
                 navigationIcon = {
                     IconButton(
                         onClick = {
@@ -88,7 +79,6 @@ fun NoteEditorScreen(
                     }
                 },
                 actions = {
-                    // Color picker button with visible icon
                     IconButton(onClick = { showColorPicker = true }) {
                         Icon(
                             imageVector = Icons.Default.Star,
@@ -114,7 +104,6 @@ fun NoteEditorScreen(
                                 text = { Text(stringResource(R.string.note_share)) },
                                 onClick = {
                                     showMoreMenu = false
-                                    // TODO: Implement share
                                 },
                                 leadingIcon = {
                                     Icon(Icons.Default.Share, contentDescription = null)
@@ -171,7 +160,6 @@ fun NoteEditorScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Title TextField with dynamic text color
             TextField(
                 value = title,
                 onValueChange = { title = it },
@@ -206,7 +194,6 @@ fun NoteEditorScreen(
                 color = textColor.copy(alpha = 0.3f)
             )
 
-            // Content TextField with dynamic text color
             TextField(
                 value = content,
                 onValueChange = { content = it },
@@ -238,7 +225,6 @@ fun NoteEditorScreen(
                 )
             )
 
-            // Metadata with dynamic text color
             if (!isNewNote && note != null) {
                 Column(
                     modifier = Modifier
@@ -260,7 +246,6 @@ fun NoteEditorScreen(
         }
     }
 
-    // Color Picker Dialog
     if (showColorPicker) {
         ColorPickerDialog(
             currentColor = noteColor,
@@ -269,7 +254,6 @@ fun NoteEditorScreen(
         )
     }
 
-    // Delete Confirmation Dialog
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -294,7 +278,6 @@ fun NoteEditorScreen(
         )
     }
 
-    // Discard Changes Dialog
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
