@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -28,6 +29,8 @@ import java.util.*
 @Composable
 fun NoteEditorScreen(
     note: Note?,
+    initialTitle: String? = null,
+    initialContent: String? = null,
     onSaveNote: (Note) -> Unit,
     onDeleteNote: () -> Unit,
     onNavigateBack: () -> Unit
@@ -38,8 +41,12 @@ fun NoteEditorScreen(
         initial = NoteColors.White.hashCode()
     )
 
-    var title by remember(note) { mutableStateOf(note?.title ?: "") }
-    var content by remember(note) { mutableStateOf(note?.content ?: "") }
+    var title by remember(note, initialTitle) {
+        mutableStateOf(initialTitle ?: note?.title ?: "")
+    }
+    var content by remember(note, initialContent) {
+        mutableStateOf(initialContent ?: note?.content ?: "")
+    }
     var noteColor by remember(note, defaultNoteColor) {
         mutableStateOf(Color(note?.color ?: defaultNoteColor))
     }
@@ -49,12 +56,13 @@ fun NoteEditorScreen(
     var showMoreMenu by remember { mutableStateOf(false) }
 
     val hasChanges = remember(title, content, noteColor) {
-        title != (note?.title ?: "") ||
-                content != (note?.content ?: "") ||
+        title != (initialTitle ?: note?.title ?: "") ||
+                content != (initialContent ?: note?.content ?: "") ||
                 noteColor.hashCode() != (note?.color ?: defaultNoteColor)
     }
 
     val isNewNote = note == null
+    val isFromClipboard = initialTitle != null || initialContent != null
     val textColor = remember(noteColor) { getContrastColor(noteColor) }
 
     Scaffold(
@@ -241,6 +249,45 @@ fun NoteEditorScreen(
                         style = MaterialTheme.typography.labelSmall,
                         color = textColor.copy(alpha = 0.7f)
                     )
+                }
+            }
+
+            if (isFromClipboard && isNewNote) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    color = textColor.copy(alpha = 0.1f),
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentPaste,
+                            contentDescription = null,
+                            tint = textColor.copy(alpha = 0.7f),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Smart Clipboard",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = textColor.copy(alpha = 0.9f)
+                            )
+                            Text(
+                                text = if (initialTitle?.isNotEmpty() == true)
+                                    "Single line → Title"
+                                else
+                                    "Multiple lines → Content",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = textColor.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
                 }
             }
         }
