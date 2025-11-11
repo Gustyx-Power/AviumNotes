@@ -2,11 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Overlay permission for Floating Bubble -->
+    <!-- Permissions -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.READ_CLIPBOARD" />
 
     <application
         android:allowBackup="true"
@@ -40,5 +41,15 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Quick note capture" />
         </service>
+
+        <!-- Clipboard Broadcast Receiver -->
+        <receiver
+            android:name=".receiver.ClipboardBroadcastReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="org.avium.CLIPBOARD_LISTEN" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>
