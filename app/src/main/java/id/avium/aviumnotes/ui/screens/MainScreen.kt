@@ -13,14 +13,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import id.avium.aviumnotes.R
 import id.avium.aviumnotes.data.local.entity.Note
+import id.avium.aviumnotes.data.preferences.PreferencesManager
 import id.avium.aviumnotes.service.FloatingBubbleService
-import id.avium.aviumnotes.ui.utils.getContrastColor  // Import dari ColorUtils
+import id.avium.aviumnotes.ui.utils.getContrastColor
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -33,9 +35,13 @@ fun MainScreen(
     onNoteClick: (Long) -> Unit,
     onAddNote: () -> Unit,
     onDeleteNote: (Note) -> Unit,
-    onTogglePin: (Long, Boolean) -> Unit
+    onTogglePin: (Long, Boolean) -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     val context = LocalContext.current
+    val preferencesManager = remember { PreferencesManager(context) }
+    val showNotePreview by preferencesManager.showNotePreview.collectAsState(initial = true)
+
     var showMenu by remember { mutableStateOf(false) }
     var isBubbleEnabled by remember { mutableStateOf(false) }
     var isSearchActive by remember { mutableStateOf(false) }
@@ -92,7 +98,10 @@ fun MainScreen(
                         )
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.settings_title)) },
-                            onClick = { showMenu = false },
+                            onClick = {
+                                showMenu = false
+                                onNavigateToSettings()
+                            },
                             leadingIcon = {
                                 Icon(Icons.Default.Settings, contentDescription = null)
                             }
@@ -125,6 +134,7 @@ fun MainScreen(
                 items(notes, key = { it.id }) { note ->
                     NoteCard(
                         note = note,
+                        showPreview = showNotePreview,
                         onClick = { onNoteClick(note.id) },
                         onDelete = { onDeleteNote(note) },
                         onTogglePin = { onTogglePin(note.id, !note.isPinned) }
@@ -138,6 +148,7 @@ fun MainScreen(
 @Composable
 fun NoteCard(
     note: Note,
+    showPreview: Boolean,
     onClick: () -> Unit,
     onDelete: () -> Unit,
     onTogglePin: () -> Unit
@@ -197,7 +208,7 @@ fun NoteCard(
                 }
             }
 
-            if (note.content.isNotEmpty()) {
+            if (note.content.isNotEmpty() && showPreview) {
                 Text(
                     text = note.content,
                     style = MaterialTheme.typography.bodyMedium,
