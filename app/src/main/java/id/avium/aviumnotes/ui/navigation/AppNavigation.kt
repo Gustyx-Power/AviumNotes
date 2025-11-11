@@ -21,6 +21,7 @@ import id.avium.aviumnotes.ui.screens.OnboardingScreen
 import id.avium.aviumnotes.ui.viewmodel.NoteViewModel
 import id.avium.aviumnotes.ui.viewmodel.NoteViewModelFactory
 import androidx.compose.ui.platform.LocalContext
+import id.avium.aviumnotes.ui.screens.SettingsScreen
 import kotlinx.coroutines.launch
 
 @Composable
@@ -93,9 +94,21 @@ fun AppNavigation(initialNoteId: Long? = null) {
                 },
                 onTogglePin = { id, isPinned ->
                     viewModel.togglePinStatus(id, isPinned)
+                },
+                onNavigateToSettings = {
+                    navController.navigate("settings")
                 }
             )
         }
+
+        composable("settings") {
+            SettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
 
         composable(
             route = "editor/{noteId}",
