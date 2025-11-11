@@ -35,37 +35,18 @@
     <string name="main_empty_notes_desc">Tap + to create your first note</string>
 
     <!-- Note Editor -->
+    <string name="note_editor_new_note">New Note</string>
+    <string name="note_editor_edit_note">Edit Note</string>
     <string name="note_title_hint">Title</string>
     <string name="note_content_hint">Start typing your note…</string>
+    <string name="note_color">Note Color</string>
     <string name="note_save">Save</string>
     <string name="note_delete">Delete</string>
     <string name="note_share">Share</string>
-
-    <!-- Settings -->
-    <string name="settings_title">Settings</string>
-    <string name="settings_floating_bubble">Floating Bubble</string>
-    <string name="settings_floating_bubble_desc">Enable quick note capture from anywhere</string>
-    <string name="settings_theme">Theme</string>
-    <string name="settings_about">About</string>
-    <string name="settings_version">Version</string>
-
-    <!-- Common -->
-    <string name="cancel">Cancel</string>
-    <string name="ok">OK</string>
-    <string name="delete">Delete</string>
-    <string name="edit">Edit</string>
-    <string name="done">Done</string>
-
-    <!-- Note Editor -->
-    <string name="note_editor_new_note">New Note</string>
-    <string name="note_editor_edit_note">Edit Note</string>
-    <string name="note_color">Note Color</string>
     <string name="note_created">Created: %1$s</string>
     <string name="note_modified">Modified: %1$s</string>
     <string name="note_discard_changes">Discard Changes?</string>
     <string name="note_discard_message">You have unsaved changes. Do you want to discard them?</string>
-    <string name="discard">Discard</string>
-    <string name="keep_editing">Keep Editing</string>
     <string name="note_saved">Note saved</string>
 
     <!-- Color Picker -->
@@ -78,4 +59,52 @@
     <string name="color_purple">Purple</string>
     <string name="color_pink">Pink</string>
 
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_theme_system">System Default</string>
+    <string name="settings_sort_by">Sort Notes By</string>
+    <string name="settings_sort_date_modified">Date Modified</string>
+    <string name="settings_sort_date_created">Date Created</string>
+    <string name="settings_sort_title">Title</string>
+    <string name="settings_default_color">Default Note Color</string>
+    <string name="settings_show_preview">Show Note Preview</string>
+    <string name="settings_show_preview_desc">Display content preview in note cards</string>
+
+    <string name="settings_floating_bubble">Floating Bubble</string>
+    <string name="settings_floating_bubble_desc">Enable quick note capture from anywhere</string>
+
+    <string name="settings_behavior">Note Behavior</string>
+    <string name="settings_auto_save">Auto Save</string>
+    <string name="settings_auto_save_desc">Save notes automatically</string>
+    <string name="settings_delete_confirm">Delete Confirmation</string>
+    <string name="settings_delete_confirm_desc">Ask before deleting notes</string>
+
+    <string name="settings_data">Data &amp; Backup</string>
+    <string name="settings_export">Export All Notes</string>
+    <string name="settings_import">Import Notes</string>
+    <string name="settings_clear_data">Clear All Data</string>
+    <string name="settings_storage">Storage Used</string>
+
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_developer">Developer</string>
+    <string name="settings_github">GitHub Repository</string>
+    <string name="settings_licenses">Open Source Licenses</string>
+
+    <string name="clear_data_title">Clear All Data?</string>
+    <string name="clear_data_message">This will delete all notes permanently. This action cannot be undone.</string>
+    <string name="clear_data_success">All data cleared successfully</string>
+
+    <!-- Common -->
+    <string name="cancel">Cancel</string>
+    <string name="ok">OK</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="done">Done</string>
+    <string name="discard">Discard</string>
+    <string name="keep_editing">Keep Editing</string>
 </resources>

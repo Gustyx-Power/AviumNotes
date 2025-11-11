@@ -26,15 +26,23 @@ private val LightColorScheme = lightColorScheme(
 fun AviumNotesTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
+    themeMode: String = "system",  // Tambahkan parameter ini
     content: @Composable () -> Unit
 ) {
+    // Determine dark theme based on themeMode
+    val useDarkTheme = when (themeMode) {
+        "light" -> false
+        "dark" -> true
+        else -> darkTheme  // system
+    }
+
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context)
+            if (useDarkTheme) dynamicDarkColorScheme(context)
             else dynamicLightColorScheme(context)
         }
-        darkTheme -> DarkColorScheme
+        useDarkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
 
