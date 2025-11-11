@@ -1,31 +1,34 @@
 package id.avium.aviumnotes.ui.navigation
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import id.avium.aviumnotes.MainActivity
 import id.avium.aviumnotes.data.local.AppDatabase
 import id.avium.aviumnotes.data.preferences.PreferencesManager
 import id.avium.aviumnotes.data.repository.NoteRepository
 import id.avium.aviumnotes.ui.screens.MainScreen
 import id.avium.aviumnotes.ui.screens.NoteEditorScreen
 import id.avium.aviumnotes.ui.screens.OnboardingScreen
+import id.avium.aviumnotes.ui.screens.SettingsScreen
 import id.avium.aviumnotes.ui.viewmodel.NoteViewModel
 import id.avium.aviumnotes.ui.viewmodel.NoteViewModelFactory
-import androidx.compose.ui.platform.LocalContext
-import id.avium.aviumnotes.ui.screens.SettingsScreen
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun AppNavigation(initialNoteId: Long? = null) {
+fun AppNavigation() {
     val navController = rememberNavController()
     val context = LocalContext.current
 
@@ -42,11 +45,18 @@ fun AppNavigation(initialNoteId: Long? = null) {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
-    // Navigate to note if initialNoteId is provided
-    LaunchedEffect(initialNoteId, isOnboardingCompleted) {
-        if (isOnboardingCompleted == true && initialNoteId != null) {
-            navController.navigate("editor/$initialNoteId") {
-                popUpTo("main") { inclusive = false }
+    var hasCheckedClipboard by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isOnboardingCompleted, hasCheckedClipboard) {
+        if (isOnboardingCompleted == true && !hasCheckedClipboard) {
+            delay(100)
+            if (MainActivity.shouldOpenClipboardNote) {
+                Log.d("AppNavigation", "Navigating to clipboard note")
+                MainActivity.shouldOpenClipboardNote = false
+                hasCheckedClipboard = true
+                navController.navigate("editor/clipboard") {
+                    popUpTo("main") { inclusive = false }
+                }
             }
         }
     }
@@ -79,6 +89,15 @@ fun AppNavigation(initialNoteId: Long? = null) {
         }
 
         composable("main") {
+            LaunchedEffect(Unit) {
+                delay(200)
+                if (MainActivity.shouldOpenClipboardNote) {
+                    Log.d("AppNavigation", "Main screen - Navigating to clipboard note")
+                    MainActivity.shouldOpenClipboardNote = false
+                    navController.navigate("editor/clipboard")
+                }
+            }
+
             MainScreen(
                 notes = notes,
                 searchQuery = searchQuery,
@@ -101,15 +120,6 @@ fun AppNavigation(initialNoteId: Long? = null) {
             )
         }
 
-        composable("settings") {
-            SettingsScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
-        }
-
-
         composable(
             route = "editor/{noteId}",
             arguments = listOf(
@@ -122,13 +132,32 @@ fun AppNavigation(initialNoteId: Long? = null) {
 
             var currentNote by remember { mutableStateOf<id.avium.aviumnotes.data.local.entity.Note?>(null) }
             var isLoading by remember { mutableStateOf(true) }
+            var editorClipboardTitle by remember { mutableStateOf<String?>(null) }
+            var editorClipboardContent by remember { mutableStateOf<String?>(null) }
 
             LaunchedEffect(noteId) {
                 isLoading = true
-                currentNote = if (noteId != "new") {
-                    repository.getNoteById(noteId?.toLongOrNull() ?: 0)
-                } else {
-                    null
+                Log.d("AppNavigation", "Loading editor for noteId: $noteId")
+                when (noteId) {
+                    "clipboard" -> {
+                        editorClipboardTitle = MainActivity.clipboardTitle
+                        editorClipboardContent = MainActivity.clipboardContent
+                        Log.d("AppNavigation", "Clipboard note - Title: '$editorClipboardTitle', Content: '$editorClipboardContent'")
+                        currentNote = null
+
+                        MainActivity.clipboardTitle = null
+                        MainActivity.clipboardContent = null
+                    }
+                    "new" -> {
+                        currentNote = null
+                        editorClipboardTitle = null
+                        editorClipboardContent = null
+                    }
+                    else -> {
+                        currentNote = repository.getNoteById(noteId?.toLongOrNull() ?: 0)
+                        editorClipboardTitle = null
+                        editorClipboardContent = null
+                    }
                 }
                 isLoading = false
             }
@@ -136,6 +165,8 @@ fun AppNavigation(initialNoteId: Long? = null) {
             if (!isLoading) {
                 NoteEditorScreen(
                     note = currentNote,
+                    initialTitle = editorClipboardTitle,
+                    initialContent = editorClipboardContent,
                     onSaveNote = { note ->
                         coroutineScope.launch {
                             if (note.id == 0L) {
@@ -160,6 +191,14 @@ fun AppNavigation(initialNoteId: Long? = null) {
                     CircularProgressIndicator()
                 }
             }
+        }
+
+        composable("settings") {
+            SettingsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }
