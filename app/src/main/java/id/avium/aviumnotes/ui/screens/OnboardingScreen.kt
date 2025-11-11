@@ -1,161 +1,164 @@
 package id.avium.aviumnotes.ui.screens
 
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import id.avium.aviumnotes.R
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen(
     onOnboardingComplete: () -> Unit
 ) {
-    val context = LocalContext.current
     val pagerState = rememberPagerState(pageCount = { 4 })
-    var showPermissionDialog by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
-    val features = listOf(
-        OnboardingFeature(
-            icon = Icons.Default.Star,
-            title = stringResource(R.string.onboarding_title),
-            description = stringResource(R.string.onboarding_description)
+    val pages = listOf(
+        OnboardingPage(
+            icon = Icons.Outlined.EditNote,
+            title = "Avium Notes",
+            description = "Create beautiful notes with rich text formatting and colors"
         ),
-        OnboardingFeature(
-            icon = Icons.Default.Edit,
-            title = stringResource(R.string.onboarding_feature_1_title),
-            description = stringResource(R.string.onboarding_feature_1_desc)
+        OnboardingPage(
+            icon = Icons.Outlined.Palette,
+            title = "Colorful Organization",
+            description = "Organize your notes with custom colors and categories"
         ),
-        OnboardingFeature(
-            icon = Icons.Default.List,
-            title = stringResource(R.string.onboarding_feature_2_title),
-            description = stringResource(R.string.onboarding_feature_2_desc)
+        OnboardingPage(
+            icon = Icons.Outlined.ContentPaste,
+            title = "Smart Clipboard",
+            description = "Automatically capture clipboard content and save as notes"
         ),
-        OnboardingFeature(
-            icon = Icons.Default.Settings,
-            title = stringResource(R.string.onboarding_feature_3_title),
-            description = stringResource(R.string.onboarding_feature_3_desc)
+        OnboardingPage(
+            icon = Icons.Outlined.BubbleChart,
+            title = "Floating Bubble",
+            description = "Quick access to your notes with floating bubble overlay"
         )
     )
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
-            .statusBarsPadding(),  // Add padding for status bar
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Skip button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
-        ) {
-            TextButton(onClick = onOnboardingComplete) {
-                Text(stringResource(R.string.onboarding_skip))
-            }
-        }
-
-        // Pager
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.weight(1f)
-        ) { page ->
-            OnboardingPage(feature = features[page])
-        }
-
-        // Indicators
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(16.dp)
-        ) {
-            repeat(4) { index ->
-                val color = if (pagerState.currentPage == index) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant
-                }
-                Box(
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .size(8.dp)
-                        .background(color, shape = CircleShape)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                        MaterialTheme.colorScheme.surface
+                    )
                 )
-            }
-        }
-
-        // Get Started button
-        Button(
-            onClick = { showPermissionDialog = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp)
-                .height(56.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.onboarding_get_started),
-                style = MaterialTheme.typography.titleMedium
             )
-        }
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) { page ->
+                OnboardingPageContent(pages[page])
+            }
 
-        Spacer(modifier = Modifier.height(32.dp))
-    }
-
-    // Permission Dialog
-    if (showPermissionDialog) {
-        AlertDialog(
-            onDismissRequest = { showPermissionDialog = false },
-            icon = { Icon(Icons.Default.Info, contentDescription = null) },
-            title = { Text(stringResource(R.string.permission_overlay_title)) },
-            text = { Text(stringResource(R.string.permission_overlay_description)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (!Settings.canDrawOverlays(context)) {
-                            val intent = Intent(
-                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                Uri.parse("package:${context.packageName}")
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                ) {
+                    repeat(pages.size) { index ->
+                        val isSelected = pagerState.currentPage == index
+                        val width by animateDpAsState(
+                            targetValue = if (isSelected) 32.dp else 8.dp,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy
                             )
-                            context.startActivity(intent)
-                        }
-                        showPermissionDialog = false
-                        onOnboardingComplete()
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 4.dp)
+                                .height(8.dp)
+                                .width(width)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isSelected)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                )
+                        )
                     }
-                ) {
-                    Text(stringResource(R.string.permission_overlay_button))
                 }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showPermissionDialog = false
-                        onOnboardingComplete()
-                    }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(stringResource(R.string.permission_overlay_later))
+                    if (pagerState.currentPage > 0) {
+                        TextButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                                }
+                            }
+                        ) {
+                            Text("Back")
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.width(80.dp))
+                    }
+
+                    Button(
+                        onClick = {
+                            if (pagerState.currentPage < pages.size - 1) {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                }
+                            } else {
+                                onOnboardingComplete()
+                            }
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
+                    ) {
+                        Text(
+                            text = if (pagerState.currentPage < pages.size - 1) "Next" else "Get Started",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
-        )
+        }
     }
 }
 
 @Composable
-fun OnboardingPage(feature: OnboardingFeature) {
+fun OnboardingPageContent(page: OnboardingPage) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -163,34 +166,44 @@ fun OnboardingPage(feature: OnboardingFeature) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = feature.icon,
-            contentDescription = null,
-            modifier = Modifier.size(120.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(120.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = page.icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(48.dp))
 
         Text(
-            text = feature.title,
-            style = MaterialTheme.typography.headlineMedium,
+            text = page.title,
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = feature.description,
+            text = page.description,
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 24.dp)
         )
     }
 }
 
-data class OnboardingFeature(
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+data class OnboardingPage(
+    val icon: ImageVector,
     val title: String,
     val description: String
 )

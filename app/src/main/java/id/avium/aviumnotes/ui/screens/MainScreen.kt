@@ -2,20 +2,31 @@ package id.avium.aviumnotes.ui.screens
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import id.avium.aviumnotes.R
@@ -26,7 +37,7 @@ import id.avium.aviumnotes.ui.utils.getContrastColor
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen(
     notes: List<Note>,
@@ -45,126 +56,315 @@ fun MainScreen(
     var showMenu by remember { mutableStateOf(false) }
     var isBubbleEnabled by remember { mutableStateOf(false) }
     var isSearchActive by remember { mutableStateOf(false) }
+    var selectedViewMode by remember { mutableStateOf("grid") }
+
+    val pinnedNotes = remember(notes) { notes.filter { it.isPinned } }
+    val unpinnedNotes = remember(notes) { notes.filter { !it.isPinned } }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    if (isSearchActive) {
-                        SearchBar(
-                            query = searchQuery,
-                            onQueryChange = onSearchQueryChange,
-                            onClearClick = {
-                                onSearchQueryChange("")
-                                isSearchActive = false
-                            }
-                        )
-                    } else {
-                        Text(stringResource(R.string.main_title))
-                    }
-                },
-                actions = {
-                    if (!isSearchActive) {
-                        IconButton(onClick = { isSearchActive = true }) {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
+            AnimatedContent(
+                targetState = isSearchActive,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(300)) togetherWith
+                            fadeOut(animationSpec = tween(300))
+                }
+            ) { searching ->
+                if (searching) {
+                    SearchTopBar(
+                        query = searchQuery,
+                        onQueryChange = onSearchQueryChange,
+                        onCloseClick = {
+                            onSearchQueryChange("")
+                            isSearchActive = false
                         }
-                    }
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Menu")
-                    }
-
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.settings_floating_bubble)) },
-                            onClick = {
-                                if (Settings.canDrawOverlays(context)) {
-                                    val intent = Intent(context, FloatingBubbleService::class.java)
-                                    intent.action = if (isBubbleEnabled) {
-                                        FloatingBubbleService.ACTION_STOP
-                                    } else {
-                                        FloatingBubbleService.ACTION_START
-                                    }
-                                    context.startService(intent)
-                                    isBubbleEnabled = !isBubbleEnabled
+                    )
+                } else {
+                    MainTopBar(
+                        noteCount = notes.size,
+                        onSearchClick = { isSearchActive = true },
+                        onMenuClick = { showMenu = true },
+                        showMenu = showMenu,
+                        onDismissMenu = { showMenu = false },
+                        onBubbleToggle = {
+                            if (Settings.canDrawOverlays(context)) {
+                                val intent = Intent(context, FloatingBubbleService::class.java)
+                                intent.action = if (isBubbleEnabled) {
+                                    FloatingBubbleService.ACTION_STOP
+                                } else {
+                                    FloatingBubbleService.ACTION_START
                                 }
-                                showMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Default.Star, contentDescription = null)
+                                context.startService(intent)
+                                isBubbleEnabled = !isBubbleEnabled
                             }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.settings_title)) },
-                            onClick = {
-                                showMenu = false
-                                onNavigateToSettings()
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Default.Settings, contentDescription = null)
-                            }
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
+                            showMenu = false
+                        },
+                        onSettingsClick = {
+                            showMenu = false
+                            onNavigateToSettings()
+                        },
+                        onViewModeChange = { mode ->
+                            selectedViewMode = mode
+                        },
+                        currentViewMode = selectedViewMode
+                    )
+                }
+            }
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
+            FloatingActionButton(
                 onClick = onAddNote,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text(stringResource(R.string.main_add_note)) }
-            )
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.main_add_note),
+                    modifier = Modifier.size(28.dp)
+                )
+            }
         }
     ) { paddingValues ->
         if (notes.isEmpty()) {
             EmptyNotesView(modifier = Modifier.padding(paddingValues))
         } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            NotesGrid(
+                pinnedNotes = pinnedNotes,
+                unpinnedNotes = unpinnedNotes,
+                showPreview = showNotePreview,
+                viewMode = selectedViewMode,
+                onNoteClick = onNoteClick,
+                onDeleteNote = onDeleteNote,
+                onTogglePin = onTogglePin,
+                modifier = Modifier.padding(paddingValues)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainTopBar(
+    noteCount: Int,
+    onSearchClick: () -> Unit,
+    onMenuClick: () -> Unit,
+    showMenu: Boolean,
+    onDismissMenu: () -> Unit,
+    onBubbleToggle: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onViewModeChange: (String) -> Unit,
+    currentViewMode: String
+) {
+    TopAppBar(
+        title = {
+            Column {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "$noteCount notes",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        actions = {
+            IconButton(onClick = onSearchClick) {
+                Icon(Icons.Outlined.Search, contentDescription = "Search")
+            }
+
+            IconButton(
+                onClick = {
+                    onViewModeChange(if (currentViewMode == "grid") "list" else "grid")
+                }
             ) {
-                items(notes, key = { it.id }) { note ->
-                    NoteCard(
-                        note = note,
-                        showPreview = showNotePreview,
-                        onClick = { onNoteClick(note.id) },
-                        onDelete = { onDeleteNote(note) },
-                        onTogglePin = { onTogglePin(note.id, !note.isPinned) }
+                Icon(
+                    imageVector = if (currentViewMode == "grid")
+                        Icons.Outlined.ViewAgenda
+                    else
+                        Icons.Outlined.GridView,
+                    contentDescription = "View Mode"
+                )
+            }
+
+            IconButton(onClick = onMenuClick) {
+                Icon(Icons.Outlined.MoreVert, contentDescription = "Menu")
+            }
+
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = onDismissMenu
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Floating Bubble") },
+                    onClick = onBubbleToggle,
+                    leadingIcon = {
+                        Icon(Icons.Outlined.BubbleChart, contentDescription = null)
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Settings") },
+                    onClick = onSettingsClick,
+                    leadingIcon = {
+                        Icon(Icons.Outlined.Settings, contentDescription = null)
+                    }
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchTopBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onCloseClick: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            TextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text(
+                        stringResource(R.string.main_search),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                ),
+                singleLine = true
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onCloseClick) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Close search")
+            }
+        },
+        actions = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(Icons.Filled.Close, contentDescription = "Clear")
                 }
             }
+        }
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun NotesGrid(
+    pinnedNotes: List<Note>,
+    unpinnedNotes: List<Note>,
+    showPreview: Boolean,
+    viewMode: String,
+    onNoteClick: (Long) -> Unit,
+    onDeleteNote: (Note) -> Unit,
+    onTogglePin: (Long, Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyVerticalStaggeredGrid(
+        columns = StaggeredGridCells.Fixed(if (viewMode == "grid") 2 else 1),
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalItemSpacing = 12.dp
+    ) {
+        if (pinnedNotes.isNotEmpty()) {
+            item(span = androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.FullLine) {
+                Text(
+                    text = "📌 Pinned",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+
+            items(pinnedNotes, key = { it.id }) { note ->
+                ModernNoteCard(
+                    note = note,
+                    showPreview = showPreview,
+                    onClick = { onNoteClick(note.id) },
+                    onDelete = { onDeleteNote(note) },
+                    onTogglePin = { onTogglePin(note.id, !note.isPinned) }
+                )
+            }
+        }
+
+        if (unpinnedNotes.isNotEmpty() && pinnedNotes.isNotEmpty()) {
+            item(span = androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.FullLine) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Others",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+        }
+
+        items(unpinnedNotes, key = { it.id }) { note ->
+            ModernNoteCard(
+                note = note,
+                showPreview = showPreview,
+                onClick = { onNoteClick(note.id) },
+                onDelete = { onDeleteNote(note) },
+                onTogglePin = { onTogglePin(note.id, !note.isPinned) }
+            )
         }
     }
 }
 
 @Composable
-fun NoteCard(
+fun ModernNoteCard(
     note: Note,
     showPreview: Boolean,
     onClick: () -> Unit,
     onDelete: () -> Unit,
-    onTogglePin: () -> Unit
+    onTogglePin: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
-
     val backgroundColor = Color(note.color)
     val textColor = remember(backgroundColor) { getContrastColor(backgroundColor) }
 
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
+
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            .scale(scale)
+            .clickable(
+                onClick = onClick,
+                onClickLabel = "Open note"
+            ),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = backgroundColor
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 8.dp
         )
     ) {
         Column(
@@ -175,22 +375,32 @@ fun NoteCard(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
                 Text(
-                    text = note.title.ifEmpty { stringResource(R.string.note_title_hint) },
+                    text = note.title.ifEmpty { "Untitled" },
                     style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                     color = textColor
                 )
 
-                Row {
-                    IconButton(onClick = onTogglePin) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    IconButton(
+                        onClick = onTogglePin,
+                        modifier = Modifier.size(32.dp)
+                    ) {
                         Icon(
-                            imageVector = if (note.isPinned) Icons.Default.Star else Icons.Default.Star,
+                            imageVector = if (note.isPinned)
+                                Icons.Filled.PushPin
+                            else
+                                Icons.Outlined.PushPin,
                             contentDescription = "Pin",
+                            modifier = Modifier.size(18.dp),
                             tint = if (note.isPinned)
                                 MaterialTheme.colorScheme.primary
                             else
@@ -198,41 +408,66 @@ fun NoteCard(
                         )
                     }
 
-                    IconButton(onClick = { showDeleteDialog = true }) {
+                    IconButton(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.Delete,
+                            imageVector = Icons.Outlined.Delete,
                             contentDescription = "Delete",
-                            tint = textColor.copy(alpha = 0.8f)
+                            modifier = Modifier.size(18.dp),
+                            tint = textColor.copy(alpha = 0.6f)
                         )
                     }
                 }
             }
 
             if (note.content.isNotEmpty() && showPreview) {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = note.content,
                     style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 3,
+                    maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
-                    color = textColor.copy(alpha = 0.8f),
-                    modifier = Modifier.padding(top = 8.dp)
+                    color = textColor.copy(alpha = 0.8f)
                 )
             }
 
-            Text(
-                text = formatDate(note.updatedAt),
-                style = MaterialTheme.typography.labelSmall,
-                color = textColor.copy(alpha = 0.6f),
-                modifier = Modifier.padding(top = 8.dp)
-            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = formatDate(note.updatedAt),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = textColor.copy(alpha = 0.6f)
+                )
+
+                Surface(
+                    shape = CircleShape,
+                    color = textColor.copy(alpha = 0.1f),
+                    modifier = Modifier.padding(start = 8.dp)
+                ) {
+                    Text(
+                        text = "${note.content.length} chars",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = textColor.copy(alpha = 0.6f),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
         }
     }
 
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(R.string.note_delete)) },
-            text = { Text("Are you sure you want to delete this note?") },
+            icon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
+            title = { Text("Delete Note?") },
+            text = { Text("This note will be permanently deleted.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -240,12 +475,12 @@ fun NoteCard(
                         showDeleteDialog = false
                     }
                 ) {
-                    Text(stringResource(R.string.delete))
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(R.string.cancel))
+                    Text("Cancel")
                 }
             }
         )
@@ -254,62 +489,50 @@ fun NoteCard(
 
 @Composable
 fun EmptyNotesView(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.Create,
-            contentDescription = null,
-            modifier = Modifier.size(120.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(32.dp)
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(120.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Outlined.EditNote,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = stringResource(R.string.main_empty_notes),
-            style = MaterialTheme.typography.titleLarge
-        )
+            Text(
+                text = "No notes yet",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
 
-        Text(
-            text = stringResource(R.string.main_empty_notes_desc),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Tap + to create your first note",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onClearClick: () -> Unit
-) {
-    TextField(
-        value = query,
-        onValueChange = onQueryChange,
-        modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text(stringResource(R.string.main_search)) },
-        trailingIcon = {
-            IconButton(onClick = onClearClick) {
-                Icon(Icons.Default.Close, contentDescription = "Clear")
-            }
-        },
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent,
-            disabledContainerColor = Color.Transparent
-        ),
-        singleLine = true
-    )
-}
-
 private fun formatDate(timestamp: Long): String {
-    val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+    val sdf = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
