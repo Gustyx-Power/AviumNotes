@@ -24,15 +24,13 @@ import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(initialNoteId: Long? = null) {
     val navController = rememberNavController()
     val context = LocalContext.current
 
-    // Initialize PreferencesManager
     val preferencesManager = remember { PreferencesManager(context) }
     val isOnboardingCompleted by preferencesManager.isOnboardingCompleted.collectAsState(initial = null)
 
-    // Initialize ViewModel
     val database = remember { AppDatabase.getInstance(context) }
     val repository = remember { NoteRepository(database.noteDao()) }
     val viewModel: NoteViewModel = viewModel(
@@ -43,7 +41,15 @@ fun AppNavigation() {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
-    // Show loading while checking onboarding status
+    // Navigate to note if initialNoteId is provided
+    LaunchedEffect(initialNoteId, isOnboardingCompleted) {
+        if (isOnboardingCompleted == true && initialNoteId != null) {
+            navController.navigate("editor/$initialNoteId") {
+                popUpTo("main") { inclusive = false }
+            }
+        }
+    }
+
     if (isOnboardingCompleted == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -101,7 +107,6 @@ fun AppNavigation() {
         ) { backStackEntry ->
             val noteId = backStackEntry.arguments?.getString("noteId")
 
-            // Load note from repository
             var currentNote by remember { mutableStateOf<id.avium.aviumnotes.data.local.entity.Note?>(null) }
             var isLoading by remember { mutableStateOf(true) }
 
@@ -115,7 +120,6 @@ fun AppNavigation() {
                 isLoading = false
             }
 
-            // Show loading or editor screen
             if (!isLoading) {
                 NoteEditorScreen(
                     note = currentNote,
@@ -136,7 +140,6 @@ fun AppNavigation() {
                     }
                 )
             } else {
-                // Loading indicator while fetching note data
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center

@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationCompat
@@ -55,6 +56,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -106,6 +108,7 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
                 startForegroundService()
             }
             ACTION_STOP -> stopService()
+            ACTION_SHOW -> showBubble()
         }
         return START_STICKY
     }
@@ -205,15 +208,20 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
                         },
                         onClose = {
                             hideExpandedView()
+                        },
+                        onHideBubble = {
+                            hideExpandedView()
+                            hideBubble()
                         }
                     )
                 }
             }
         }
 
+        val displayMetrics = resources.displayMetrics
         expandedParams = WindowManager.LayoutParams(
-            (windowManager.defaultDisplay.width * 0.9).toInt(),
-            (windowManager.defaultDisplay.height * 0.7).toInt(),
+            (displayMetrics.widthPixels * 0.9).toInt(),
+            (displayMetrics.heightPixels * 0.7).toInt(),
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             } else {
@@ -240,19 +248,33 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
 
     private fun openNoteInApp(noteId: Long) {
         val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra("note_id", noteId)
         }
         startActivity(intent)
         hideExpandedView()
+        // Auto hide bubble after opening note
+        hideBubble()
+    }
+
+    private fun hideBubble() {
+        bubbleView?.let {
+            windowManager.removeView(it)
+            bubbleView = null
+        }
+    }
+
+    private fun showBubble() {
+        if (bubbleView == null) {
+            showFloatingBubble()
+        }
     }
 
     private fun stopService() {
         hideExpandedView()
-        if (bubbleView != null) {
-            windowManager.removeView(bubbleView)
-            bubbleView = null
-        }
+        hideBubble()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -304,9 +326,7 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
         serviceScope.cancel()
         hideExpandedView()
-        if (bubbleView != null) {
-            windowManager.removeView(bubbleView)
-        }
+        hideBubble()
     }
 
     companion object {
@@ -314,6 +334,7 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
         const val NOTIFICATION_ID = 1
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
+        const val ACTION_SHOW = "ACTION_SHOW"
     }
 }
 
@@ -321,12 +342,20 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
 fun FloatingNotesListContent(
     repository: NoteRepository,
     onNoteClick: (Long) -> Unit,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onHideBubble: () -> Unit
 ) {
     var notes by remember { mutableStateOf<List<Note>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
-        notes = repository.getAllNotes().first()
+        try {
+            notes = repository.getAllNotes().first()
+        } catch (e: Exception) {
+            notes = emptyList()
+        } finally {
+            isLoading = false
+        }
     }
 
     Surface(
@@ -351,21 +380,44 @@ fun FloatingNotesListContent(
                 Text(
                     text = "My Notes",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    fontWeight = FontWeight.Bold
                 )
 
-                IconButton(onClick = onClose) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close"
-                    )
+                Row {
+                    // Hide bubble button (dengan warna merah)
+                    IconButton(
+                        onClick = onHideBubble
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Hide bubble",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+
+                    // Close list button
+                    IconButton(onClick = onClose) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close"
+                        )
+                    }
                 }
             }
 
             Divider()
 
-            // Notes list
-            if (notes.isEmpty()) {
+            // Content
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (notes.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -386,6 +438,12 @@ fun FloatingNotesListContent(
                             text = "No notes yet",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Create your first note in the app",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                     }
                 }
@@ -432,7 +490,7 @@ fun FloatingNoteCard(
             Text(
                 text = note.title.ifEmpty { "Untitled" },
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = textColor
