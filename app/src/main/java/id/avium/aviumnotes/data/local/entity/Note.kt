@@ -9,8 +9,9 @@ data class Note(
     val id: Long = 0,
     val title: String,
     val content: String,
-    val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis(),
-    val color: Int = 0xFFFFFFFF.toInt(), // Default white
-    val isPinned: Boolean = false
+    val color: Int,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val isPinned: Boolean = false,
+    val spanCount: Int = 1
 )
