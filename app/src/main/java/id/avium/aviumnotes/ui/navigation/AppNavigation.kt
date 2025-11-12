@@ -18,10 +18,7 @@ import id.avium.aviumnotes.MainActivity
 import id.avium.aviumnotes.data.local.AppDatabase
 import id.avium.aviumnotes.data.preferences.PreferencesManager
 import id.avium.aviumnotes.data.repository.NoteRepository
-import id.avium.aviumnotes.ui.screens.MainScreen
-import id.avium.aviumnotes.ui.screens.NoteEditorScreen
-import id.avium.aviumnotes.ui.screens.OnboardingScreen
-import id.avium.aviumnotes.ui.screens.SettingsScreen
+import id.avium.aviumnotes.ui.screens.*
 import id.avium.aviumnotes.ui.viewmodel.NoteViewModel
 import id.avium.aviumnotes.ui.viewmodel.NoteViewModelFactory
 import kotlinx.coroutines.delay
@@ -51,21 +48,15 @@ fun AppNavigation() {
         if (isOnboardingCompleted == true && !hasCheckedClipboard) {
             delay(100)
             if (MainActivity.shouldOpenClipboardNote) {
-                Log.d("AppNavigation", "Navigating to clipboard note")
                 MainActivity.shouldOpenClipboardNote = false
                 hasCheckedClipboard = true
-                navController.navigate("editor/clipboard") {
-                    popUpTo("main") { inclusive = false }
-                }
+                navController.navigate("editor/clipboard")
             }
         }
     }
 
     if (isOnboardingCompleted == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
         return
@@ -89,31 +80,14 @@ fun AppNavigation() {
         }
 
         composable("main") {
-            LaunchedEffect(Unit) {
-                delay(200)
-                if (MainActivity.shouldOpenClipboardNote) {
-                    Log.d("AppNavigation", "Main screen - Navigating to clipboard note")
-                    MainActivity.shouldOpenClipboardNote = false
-                    navController.navigate("editor/clipboard")
-                }
-            }
-
             MainScreen(
                 notes = notes,
                 searchQuery = searchQuery,
                 onSearchQueryChange = { viewModel.updateSearchQuery(it) },
-                onNoteClick = { noteId ->
-                    navController.navigate("editor/$noteId")
-                },
-                onAddNote = {
-                    navController.navigate("editor/new")
-                },
-                onDeleteNote = { note ->
-                    viewModel.deleteNote(note)
-                },
-                onTogglePin = { id, isPinned ->
-                    viewModel.togglePinStatus(id, isPinned)
-                },
+                onNoteClick = { noteId -> navController.navigate("editor/$noteId") },
+                onAddNote = { navController.navigate("editor/new") },
+                onDeleteNote = { note -> viewModel.deleteNote(note) },
+                onTogglePin = { id, isPinned -> viewModel.togglePinStatus(id, isPinned) },
                 onResizeCard = { note, newSpan ->
                     coroutineScope.launch {
                         val updatedNote = note.copy(
@@ -123,19 +97,13 @@ fun AppNavigation() {
                         viewModel.updateNote(updatedNote)
                     }
                 },
-                onNavigateToSettings = {
-                    navController.navigate("settings")
-                }
+                onNavigateToSettings = { navController.navigate("settings") }
             )
         }
 
         composable(
             route = "editor/{noteId}",
-            arguments = listOf(
-                navArgument("noteId") {
-                    type = NavType.StringType
-                }
-            )
+            arguments = listOf(navArgument("noteId") { type = NavType.StringType })
         ) { backStackEntry ->
             val noteId = backStackEntry.arguments?.getString("noteId")
 
@@ -146,14 +114,11 @@ fun AppNavigation() {
 
             LaunchedEffect(noteId) {
                 isLoading = true
-                Log.d("AppNavigation", "Loading editor for noteId: $noteId")
                 when (noteId) {
                     "clipboard" -> {
                         editorClipboardTitle = MainActivity.clipboardTitle
                         editorClipboardContent = MainActivity.clipboardContent
-                        Log.d("AppNavigation", "Clipboard note - Title: '$editorClipboardTitle', Content: '$editorClipboardContent'")
                         currentNote = null
-
                         MainActivity.clipboardTitle = null
                         MainActivity.clipboardContent = null
                     }
@@ -172,7 +137,7 @@ fun AppNavigation() {
             }
 
             if (!isLoading) {
-                NoteEditorScreen(
+                RichTextEditorScreen(
                     note = currentNote,
                     initialTitle = editorClipboardTitle,
                     initialContent = editorClipboardContent,
@@ -185,29 +150,46 @@ fun AppNavigation() {
                             }
                         }
                     },
-                    onDeleteNote = {
-                        currentNote?.let { viewModel.deleteNote(it) }
-                    },
-                    onNavigateBack = {
-                        navController.popBackStack()
+                    onDeleteNote = { currentNote?.let { viewModel.deleteNote(it) } },
+                    onNavigateBack = { navController.popBackStack() },
+                    onOpenDrawing = {
+                        val id = currentNote?.id ?: 0L
+                        navController.navigate("drawing/$id")
                     }
                 )
             } else {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
         }
 
-        composable("settings") {
-            SettingsScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
+        composable(
+            route = "drawing/{noteId}",
+            arguments = listOf(navArgument("noteId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getLong("noteId") ?: 0L
+            DrawingScreen(
+                noteId = noteId,
+                onSaveDrawing = { path ->
+                    coroutineScope.launch {
+                        val note = repository.getNoteById(noteId)
+                        note?.let {
+                            val updatedNote = it.copy(
+                                hasDrawing = true,
+                                drawingPath = path,
+                                updatedAt = System.currentTimeMillis()
+                            )
+                            viewModel.updateNote(updatedNote)
+                        }
+                    }
+                },
+                onNavigateBack = { navController.popBackStack() }
             )
+        }
+
+        composable("settings") {
+            SettingsScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

@@ -13,5 +13,7 @@ data class Note(
     val createdAt: Long,
     val updatedAt: Long,
     val isPinned: Boolean = false,
-    val spanCount: Int = 1
+    val spanCount: Int = 1,
+    val hasDrawing: Boolean = false,
+    val drawingPath: String? = null
 )
