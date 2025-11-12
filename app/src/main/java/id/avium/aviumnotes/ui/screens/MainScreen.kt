@@ -1,11 +1,13 @@
 package id.avium.aviumnotes.ui.screens
 
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.provider.Settings
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -23,8 +25,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -165,7 +170,7 @@ fun MainTopBar(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "$noteCount notes",
+                    text = stringResource(R.string.main_notes_count, noteCount),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -173,25 +178,25 @@ fun MainTopBar(
         },
         actions = {
             IconButton(onClick = onSearchClick) {
-                Icon(Icons.Outlined.Search, contentDescription = "Search")
+                Icon(Icons.Outlined.Search, contentDescription = stringResource(R.string.main_search))
             }
             IconButton(onClick = { onViewModeChange(if (currentViewMode == "grid") "list" else "grid") }) {
                 Icon(
                     imageVector = if (currentViewMode == "grid") Icons.Outlined.ViewAgenda else Icons.Outlined.GridView,
-                    contentDescription = "View Mode"
+                    contentDescription = stringResource(R.string.main_view_mode)
                 )
             }
             IconButton(onClick = onMenuClick) {
-                Icon(Icons.Outlined.MoreVert, contentDescription = "Menu")
+                Icon(Icons.Outlined.MoreVert, contentDescription = stringResource(R.string.main_menu))
             }
             DropdownMenu(expanded = showMenu, onDismissRequest = onDismissMenu) {
                 DropdownMenuItem(
-                    text = { Text("Floating Bubble") },
+                    text = { Text(stringResource(R.string.main_floating_bubble)) },
                     onClick = onBubbleToggle,
                     leadingIcon = { Icon(Icons.Outlined.BubbleChart, contentDescription = null) }
                 )
                 DropdownMenuItem(
-                    text = { Text("Settings") },
+                    text = { Text(stringResource(R.string.main_settings)) },
                     onClick = onSettingsClick,
                     leadingIcon = { Icon(Icons.Outlined.Settings, contentDescription = null) }
                 )
@@ -221,10 +226,10 @@ fun SearchTopBar(query: String, onQueryChange: (String) -> Unit, onCloseClick: (
                 singleLine = true
             )
         },
-        navigationIcon = { IconButton(onClick = onCloseClick) { Icon(Icons.Filled.ArrowBack, contentDescription = "Close") } },
+        navigationIcon = { IconButton(onClick = onCloseClick) { Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.main_back)) } },
         actions = {
             if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Filled.Close, contentDescription = "Clear") }
+                IconButton(onClick = { onQueryChange("") }) { Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.main_clear)) }
             }
         }
     )
@@ -253,7 +258,7 @@ fun NotesGrid(
         if (pinnedNotes.isNotEmpty()) {
             item(span = StaggeredGridItemSpan.FullLine) {
                 Text(
-                    text = "📌 Pinned",
+                    text = stringResource(R.string.main_pinned),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -282,7 +287,7 @@ fun NotesGrid(
             item(span = StaggeredGridItemSpan.FullLine) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Others",
+                    text = stringResource(R.string.main_others),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 8.dp)
@@ -349,7 +354,7 @@ fun ModernNoteCard(
                     verticalAlignment = Alignment.Top
                 ) {
                     Text(
-                        text = note.title.ifEmpty { "Untitled" },
+                        text = note.title.ifEmpty { stringResource(R.string.note_untitled) },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = if (note.spanCount == 2) 3 else 2,
@@ -362,7 +367,7 @@ fun ModernNoteCard(
                             IconButton(onClick = onTogglePin, modifier = Modifier.size(32.dp)) {
                                 Icon(
                                     imageVector = if (note.isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
-                                    contentDescription = "Pin",
+                                    contentDescription = stringResource(R.string.note_pin),
                                     modifier = Modifier.size(18.dp),
                                     tint = if (note.isPinned) MaterialTheme.colorScheme.primary else textColor.copy(alpha = 0.6f)
                                 )
@@ -370,7 +375,7 @@ fun ModernNoteCard(
                             IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.size(32.dp)) {
                                 Icon(
                                     imageVector = Icons.Outlined.Delete,
-                                    contentDescription = "Delete",
+                                    contentDescription = stringResource(R.string.note_delete),
                                     modifier = Modifier.size(18.dp),
                                     tint = textColor.copy(alpha = 0.6f)
                                 )
@@ -378,10 +383,37 @@ fun ModernNoteCard(
                         }
                     }
                 }
+
+                // Drawing Preview (NEW)
+                if (note.hasDrawing && note.drawingPath != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val bitmap = remember(note.drawingPath) {
+                        BitmapFactory.decodeFile(note.drawingPath)
+                    }
+                    bitmap?.let {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(if (note.spanCount == 2) 160.dp else 120.dp),
+                            tonalElevation = 2.dp
+                        ) {
+                            Image(
+                                bitmap = it.asImageBitmap(),
+                                contentDescription = stringResource(R.string.note_drawing),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+                }
+
                 if (note.content.isNotEmpty() && showPreview) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = note.content,
+                        text = stripHtmlTags(note.content),
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = if (note.spanCount == 2) 8 else 4,
                         overflow = TextOverflow.Ellipsis,
@@ -401,7 +433,7 @@ fun ModernNoteCard(
                     )
                     Surface(shape = CircleShape, color = textColor.copy(alpha = 0.1f)) {
                         Text(
-                            text = "${note.content.length} chars",
+                            text = stringResource(R.string.note_chars_count, note.content.length),
                             style = MaterialTheme.typography.labelSmall,
                             color = textColor.copy(alpha = 0.6f),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -430,7 +462,7 @@ fun ModernNoteCard(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Outlined.KeyboardDoubleArrowRight,
-                        contentDescription = "Expand",
+                        contentDescription = stringResource(R.string.note_expand),
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -457,7 +489,7 @@ fun ModernNoteCard(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Outlined.KeyboardDoubleArrowLeft,
-                        contentDescription = "Collapse",
+                        contentDescription = stringResource(R.string.note_collapse),
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -470,14 +502,14 @@ fun ModernNoteCard(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             icon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
-            title = { Text("Delete Note?") },
-            text = { Text("This note will be permanently deleted.") },
+            title = { Text(stringResource(R.string.note_delete_title)) },
+            text = { Text(stringResource(R.string.note_delete_message)) },
             confirmButton = {
                 TextButton(onClick = { onDelete(); showDeleteDialog = false }) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.note_delete_confirm), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.note_delete_cancel)) } }
         )
     }
 }
@@ -501,9 +533,17 @@ fun EmptyNotesView(modifier: Modifier = Modifier) {
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
-            Text(text = "No notes yet", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text(
+                text = stringResource(R.string.main_empty_title),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Tap + to create your first note", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                text = stringResource(R.string.main_empty_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -512,3 +552,16 @@ private fun formatDate(timestamp: Long): String {
     val sdf = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
+
+// Helper function untuk strip HTML tags
+private fun stripHtmlTags(html: String): String {
+    return html
+        .replace(Regex("<[^>]*>"), "")  // Remove HTML tags
+        .replace("&nbsp;", " ")          // Replace &nbsp;
+        .replace("&amp;", "&")           // Replace &amp;
+        .replace("&lt;", "<")            // Replace &lt;
+        .replace("&gt;", ">")            // Replace &gt;
+        .replace("&quot;", "\"")         // Replace &quot;
+        .trim()
+}
+
