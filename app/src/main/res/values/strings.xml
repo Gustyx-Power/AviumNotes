@@ -7,18 +7,16 @@
     <string name="onboarding_title">Welcome to AviumNotes</string>
     <string name="onboarding_subtitle">Your notes, organized beautifully</string>
     <string name="onboarding_description">Capture your thoughts quickly with our floating bubble feature and organize them efficiently</string>
-
     <string name="onboarding_feature_1_title">Quick Capture</string>
     <string name="onboarding_feature_1_desc">Write notes instantly from anywhere with floating bubble</string>
-
     <string name="onboarding_feature_2_title">Organize Easily</string>
     <string name="onboarding_feature_2_desc">Categorize and search your notes effortlessly</string>
-
     <string name="onboarding_feature_3_title">Sync Seamlessly</string>
     <string name="onboarding_feature_3_desc">Your notes stay with you across Avium OS devices</string>
-
     <string name="onboarding_get_started">Get Started</string>
     <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_back">Back</string>
 
     <!-- Permission -->
     <string name="permission_overlay_title">Enable Floating Bubble</string>
@@ -31,8 +29,32 @@
     <string name="main_title">Avium Notes</string>
     <string name="main_search">Search notes</string>
     <string name="main_add_note">New Note</string>
+    <string name="main_view_mode">View Mode</string>
+    <string name="main_menu">Menu</string>
+    <string name="main_floating_bubble">Floating Bubble</string>
+    <string name="main_settings">Settings</string>
+    <string name="main_back">Back</string>
+    <string name="main_clear">Clear</string>
+    <string name="main_notes_count">%d notes</string>
+    <string name="main_pinned">📌 Pinned</string>
+    <string name="main_others">Others</string>
+    <string name="main_empty_title">No notes yet</string>
+    <string name="main_empty_subtitle">Tap + to create your first note</string>
     <string name="main_empty_notes">No notes yet</string>
     <string name="main_empty_notes_desc">Tap + to create your first note</string>
+
+    <!-- Note Card -->
+    <string name="note_untitled">Untitled</string>
+    <string name="note_pin">Pin</string>
+    <string name="note_delete">Delete</string>
+    <string name="note_chars_count">%d chars</string>
+    <string name="note_expand">Expand</string>
+    <string name="note_collapse">Collapse</string>
+    <string name="note_delete_title">Delete Note?</string>
+    <string name="note_delete_message">This note will be permanently deleted.</string>
+    <string name="note_delete_confirm">Delete</string>
+    <string name="note_delete_cancel">Cancel</string>
+    <string name="note_drawing">Drawing</string>
 
     <!-- Note Editor -->
     <string name="note_editor_new_note">New Note</string>
@@ -41,13 +63,41 @@
     <string name="note_content_hint">Start typing your note…</string>
     <string name="note_color">Note Color</string>
     <string name="note_save">Save</string>
-    <string name="note_delete">Delete</string>
     <string name="note_share">Share</string>
     <string name="note_created">Created: %1$s</string>
     <string name="note_modified">Modified: %1$s</string>
     <string name="note_discard_changes">Discard Changes?</string>
     <string name="note_discard_message">You have unsaved changes. Do you want to discard them?</string>
     <string name="note_saved">Note saved</string>
+    <string name="editor_unsaved">Unsaved</string>
+    <string name="editor_color">Color</string>
+    <string name="editor_more">More</string>
+    <string name="editor_discard_title">Discard Changes?</string>
+    <string name="editor_discard_message">You have unsaved changes.</string>
+    <string name="editor_discard_confirm">Discard</string>
+    <string name="editor_keep_editing">Keep Editing</string>
+
+    <!-- Rich Text Editor -->
+    <string name="editor_bold">Bold</string>
+    <string name="editor_italic">Italic</string>
+    <string name="editor_underline">Underline</string>
+    <string name="editor_strikethrough">Strikethrough</string>
+    <string name="editor_heading">Heading</string>
+    <string name="editor_drawing">Drawing</string>
+    <string name="editor_toggle_formatting">Toggle Formatting</string>
+
+    <!-- Drawing -->
+    <string name="drawing_title">Draw</string>
+    <string name="drawing_save">Save Drawing</string>
+    <string name="drawing_undo">Undo</string>
+    <string name="drawing_redo">Redo</string>
+    <string name="drawing_clear">Clear</string>
+    <string name="drawing_color">Color</string>
+    <string name="drawing_stroke_width">Stroke Width</string>
+    <string name="drawing_choose_color">Choose Color</string>
+    <string name="drawing_close">Close</string>
+    <string name="drawing_stroke_dialog_title">Stroke Width</string>
+    <string name="drawing_stroke_dialog_ok">OK</string>
 
     <!-- Color Picker -->
     <string name="color_white">White</string>
@@ -55,9 +105,13 @@
     <string name="color_orange">Orange</string>
     <string name="color_yellow">Yellow</string>
     <string name="color_green">Green</string>
+    <string name="color_cyan">Cyan</string>
     <string name="color_blue">Blue</string>
     <string name="color_purple">Purple</string>
     <string name="color_pink">Pink</string>
+    <string name="color_gray">Gray</string>
+    <string name="color_picker_title">Choose Color</string>
+    <string name="color_picker_close">Close</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -99,6 +153,20 @@
     <string name="clear_data_message">This will delete all notes permanently. This action cannot be undone.</string>
     <string name="clear_data_success">All data cleared successfully</string>
 
+    <!-- Export/Import -->
+    <string name="export_success">Exported %d notes successfully</string>
+    <string name="export_failed">Export failed: %s</string>
+    <string name="import_success">Imported %d notes successfully</string>
+    <string name="import_failed">Import failed: %s</string>
+
+    <!-- Toast Messages -->
+    <string name="toast_note_saved">Note saved</string>
+    <string name="toast_note_deleted">Note deleted</string>
+    <string name="toast_note_pinned">Note pinned</string>
+    <string name="toast_note_unpinned">Note unpinned</string>
+    <string name="toast_drawing_saved">Drawing saved</string>
+    <string name="toast_copied_to_clipboard">Copied to clipboard</string>
+
     <!-- Common -->
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
@@ -107,4 +175,8 @@
     <string name="done">Done</string>
     <string name="discard">Discard</string>
     <string name="keep_editing">Keep Editing</string>
+    <string name="close">Close</string>
+    <string name="save">Save</string>
+    <string name="share">Share</string>
+    <string name="search">Search</string>
 </resources>
