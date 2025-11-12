@@ -51,6 +51,7 @@ fun MainScreen(
     onSearchQueryChange: (String) -> Unit,
     onNoteClick: (Long) -> Unit,
     onAddNote: () -> Unit,
+    onAddDrawing: () -> Unit = {},  // NEW
     onDeleteNote: (Note) -> Unit,
     onTogglePin: (Long, Boolean) -> Unit,
     onResizeCard: (Note, Int) -> Unit,
@@ -64,6 +65,7 @@ fun MainScreen(
     var isBubbleEnabled by remember { mutableStateOf(false) }
     var isSearchActive by remember { mutableStateOf(false) }
     var selectedViewMode by remember { mutableStateOf("grid") }
+    var showFabOptions by remember { mutableStateOf(false) }  // NEW
 
     val pinnedNotes = remember(notes) { notes.filter { it.isPinned } }
     val unpinnedNotes = remember(notes) { notes.filter { !it.isPinned } }
@@ -116,17 +118,109 @@ fun MainScreen(
             }
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddNote,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                shape = RoundedCornerShape(16.dp)
+            // NEW FAB with options
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = stringResource(R.string.main_add_note),
-                    modifier = Modifier.size(28.dp)
-                )
+                // FAB Options
+                AnimatedVisibility(
+                    visible = showFabOptions,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Drawing FAB
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                modifier = Modifier.padding(8.dp)
+                            ) {
+                                Text(
+                                    "New Drawing",
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
+                            FloatingActionButton(
+                                onClick = {
+                                    showFabOptions = false
+                                    onAddDrawing()
+                                },
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(56.dp)
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Brush,
+                                    contentDescription = "New Drawing",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+
+                        // Note FAB
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.tertiaryContainer,
+                                modifier = Modifier.padding(8.dp)
+                            ) {
+                                Text(
+                                    "New Note",
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
+                            FloatingActionButton(
+                                onClick = {
+                                    showFabOptions = false
+                                    onAddNote()
+                                },
+                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.size(56.dp)
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Edit,
+                                    contentDescription = "New Note",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Main FAB
+                FloatingActionButton(
+                    onClick = { showFabOptions = !showFabOptions },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    AnimatedContent(
+                        targetState = showFabOptions,
+                        transitionSpec = {
+                            fadeIn() + scaleIn() togetherWith fadeOut() + scaleOut()
+                        }
+                    ) { expanded ->
+                        Icon(
+                            imageVector = if (expanded) Icons.Filled.Close else Icons.Filled.Add,
+                            contentDescription = if (expanded) "Close" else stringResource(R.string.main_add_note),
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
             }
         }
     ) { paddingValues ->
@@ -384,7 +478,7 @@ fun ModernNoteCard(
                     }
                 }
 
-                // Drawing Preview (NEW)
+                // Drawing Preview
                 if (note.hasDrawing && note.drawingPath != null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     val bitmap = remember(note.drawingPath) {
@@ -393,17 +487,13 @@ fun ModernNoteCard(
                     bitmap?.let {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(if (note.spanCount == 2) 160.dp else 120.dp),
+                            modifier = Modifier.fillMaxWidth().height(if (note.spanCount == 2) 160.dp else 120.dp),
                             tonalElevation = 2.dp
                         ) {
                             Image(
                                 bitmap = it.asImageBitmap(),
                                 contentDescription = stringResource(R.string.note_drawing),
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(8.dp)),
+                                modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
                                 contentScale = ContentScale.Crop
                             )
                         }
@@ -553,15 +643,13 @@ private fun formatDate(timestamp: Long): String {
     return sdf.format(Date(timestamp))
 }
 
-// Helper function untuk strip HTML tags
 private fun stripHtmlTags(html: String): String {
     return html
-        .replace(Regex("<[^>]*>"), "")  // Remove HTML tags
-        .replace("&nbsp;", " ")          // Replace &nbsp;
-        .replace("&amp;", "&")           // Replace &amp;
-        .replace("&lt;", "<")            // Replace &lt;
-        .replace("&gt;", ">")            // Replace &gt;
-        .replace("&quot;", "\"")         // Replace &quot;
+        .replace(Regex("<[^>]*>"), "")
+        .replace("&nbsp;", " ")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
         .trim()
 }
-

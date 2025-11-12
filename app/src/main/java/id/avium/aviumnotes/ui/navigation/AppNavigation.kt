@@ -86,6 +86,7 @@ fun AppNavigation() {
                 onSearchQueryChange = { viewModel.updateSearchQuery(it) },
                 onNoteClick = { noteId -> navController.navigate("editor/$noteId") },
                 onAddNote = { navController.navigate("editor/new") },
+                onAddDrawing = { navController.navigate("drawing/new") },  // NEW
                 onDeleteNote = { note -> viewModel.deleteNote(note) },
                 onTogglePin = { id, isPinned -> viewModel.togglePinStatus(id, isPinned) },
                 onResizeCard = { note, newSpan ->
@@ -101,6 +102,7 @@ fun AppNavigation() {
             )
         }
 
+        // Note Editor Route
         composable(
             route = "editor/{noteId}",
             arguments = listOf(navArgument("noteId") { type = NavType.StringType })
@@ -151,11 +153,7 @@ fun AppNavigation() {
                         }
                     },
                     onDeleteNote = { currentNote?.let { viewModel.deleteNote(it) } },
-                    onNavigateBack = { navController.popBackStack() },
-                    onOpenDrawing = {
-                        val id = currentNote?.id ?: 0L
-                        navController.navigate("drawing/$id")
-                    }
+                    onNavigateBack = { navController.popBackStack() }
                 )
             } else {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -164,28 +162,49 @@ fun AppNavigation() {
             }
         }
 
+        // Drawing Screen Route (NEW - Simplified)
         composable(
             route = "drawing/{noteId}",
-            arguments = listOf(navArgument("noteId") { type = NavType.LongType })
+            arguments = listOf(navArgument("noteId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val noteId = backStackEntry.arguments?.getLong("noteId") ?: 0L
-            DrawingScreen(
-                noteId = noteId,
-                onSaveDrawing = { path ->
-                    coroutineScope.launch {
-                        val note = repository.getNoteById(noteId)
-                        note?.let {
-                            val updatedNote = it.copy(
-                                hasDrawing = true,
-                                drawingPath = path,
-                                updatedAt = System.currentTimeMillis()
-                            )
-                            viewModel.updateNote(updatedNote)
-                        }
+            val noteId = backStackEntry.arguments?.getString("noteId")
+
+            var currentNote by remember { mutableStateOf<id.avium.aviumnotes.data.local.entity.Note?>(null) }
+            var isLoading by remember { mutableStateOf(true) }
+
+            LaunchedEffect(noteId) {
+                isLoading = true
+                when (noteId) {
+                    "new" -> {
+                        currentNote = null
                     }
-                },
-                onNavigateBack = { navController.popBackStack() }
-            )
+                    else -> {
+                        currentNote = repository.getNoteById(noteId?.toLongOrNull() ?: 0)
+                    }
+                }
+                isLoading = false
+            }
+
+            if (!isLoading) {
+                DrawingScreen(
+                    note = currentNote,
+                    onSaveDrawing = { updatedNote ->
+                        coroutineScope.launch {
+                            if (updatedNote.id == 0L) {
+                                viewModel.insertNote(updatedNote)
+                            } else {
+                                viewModel.updateNote(updatedNote)
+                            }
+                        }
+                    },
+                    onDeleteDrawing = { currentNote?.let { viewModel.deleteNote(it) } },
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            } else {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
         }
 
         composable("settings") {
