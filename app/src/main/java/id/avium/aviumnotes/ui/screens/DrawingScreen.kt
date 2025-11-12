@@ -21,7 +21,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -76,12 +75,8 @@ fun DrawingScreen(
     val sheetState = rememberModalBottomSheetState()
     val isNewDrawing = note == null
 
-    // Load existing drawing
-    LaunchedEffect(note) {
-        if (note?.hasDrawing == true && note.drawingPath != null) {
-            // Load from file if needed
-        }
-    }
+    // Check if viewing existing drawing (read-only)
+    val isViewingExisting = note?.hasDrawing == true && note.drawingPath != null && drawingPaths.isEmpty()
 
     Scaffold(
         topBar = {
@@ -93,29 +88,39 @@ fun DrawingScreen(
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            if (drawingPaths.isNotEmpty()) {
-                                val lastPath = drawingPaths.last()
-                                undoStack = undoStack + lastPath
-                                drawingPaths = drawingPaths.dropLast(1)
-                            }
-                        },
-                        enabled = drawingPaths.isNotEmpty()
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.Undo, "Undo", tint = if (drawingPaths.isNotEmpty()) textColor else textColor.copy(alpha = 0.3f))
-                    }
-                    IconButton(
-                        onClick = {
-                            if (undoStack.isNotEmpty()) {
-                                val pathToRedo = undoStack.last()
-                                drawingPaths = drawingPaths + pathToRedo
-                                undoStack = undoStack.dropLast(1)
-                            }
-                        },
-                        enabled = undoStack.isNotEmpty()
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.Redo, "Redo", tint = if (undoStack.isNotEmpty()) textColor else textColor.copy(alpha = 0.3f))
+                    if (!isViewingExisting) {
+                        IconButton(
+                            onClick = {
+                                if (drawingPaths.isNotEmpty()) {
+                                    val lastPath = drawingPaths.last()
+                                    undoStack = undoStack + lastPath
+                                    drawingPaths = drawingPaths.dropLast(1)
+                                }
+                            },
+                            enabled = drawingPaths.isNotEmpty()
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Undo,
+                                "Undo",
+                                tint = if (drawingPaths.isNotEmpty()) textColor else textColor.copy(alpha = 0.3f)
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                if (undoStack.isNotEmpty()) {
+                                    val pathToRedo = undoStack.last()
+                                    drawingPaths = drawingPaths + pathToRedo
+                                    undoStack = undoStack.dropLast(1)
+                                }
+                            },
+                            enabled = undoStack.isNotEmpty()
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Redo,
+                                "Redo",
+                                tint = if (undoStack.isNotEmpty()) textColor else textColor.copy(alpha = 0.3f)
+                            )
+                        }
                     }
 
                     IconButton(onClick = { showColorPicker = true }) {
@@ -126,11 +131,23 @@ fun DrawingScreen(
                         IconButton(onClick = { showMoreMenu = true }) {
                             Icon(Icons.Outlined.MoreVert, "More", tint = textColor)
                         }
-                        DropdownMenu(expanded = showMoreMenu, onDismissRequest = { showMoreMenu = false }) {
+                        DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = { showMoreMenu = false }
+                        ) {
                             DropdownMenuItem(
                                 text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
-                                onClick = { showMoreMenu = false; showDeleteDialog = true },
-                                leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) }
+                                onClick = {
+                                    showMoreMenu = false
+                                    showDeleteDialog = true
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Outlined.Delete,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
                             )
                         }
                     }
@@ -139,50 +156,63 @@ fun DrawingScreen(
             )
         },
         floatingActionButton = {
-            if (drawingPaths.isNotEmpty()) {
+            if (drawingPaths.isNotEmpty() || isViewingExisting) {
                 FloatingActionButton(
                     onClick = {
-                        val screenWidth = context.resources.displayMetrics.widthPixels
-                        val screenHeight = context.resources.displayMetrics.heightPixels
-                        val density = context.resources.displayMetrics.density
+                        if (isViewingExisting) {
+                            // Just go back if viewing existing
+                            onNavigateBack()
+                        } else {
+                            // Save new drawing
+                            val screenWidth = context.resources.displayMetrics.widthPixels
+                            val screenHeight = context.resources.displayMetrics.heightPixels
+                            val density = context.resources.displayMetrics.density
 
-                        val canvasWidth = screenWidth - (32 * density).toInt()
-                        val canvasHeight = screenHeight - (200 * density).toInt()
+                            val canvasWidth = screenWidth - (32 * density).toInt()
+                            val canvasHeight = screenHeight - (200 * density).toInt()
 
-                        val bitmap = Bitmap.createBitmap(canvasWidth, canvasHeight, Bitmap.Config.ARGB_8888)
-                        val canvas = android.graphics.Canvas(bitmap)
-                        canvas.drawColor(android.graphics.Color.WHITE)
+                            val bitmap = Bitmap.createBitmap(
+                                canvasWidth,
+                                canvasHeight,
+                                Bitmap.Config.ARGB_8888
+                            )
+                            val canvas = android.graphics.Canvas(bitmap)
+                            canvas.drawColor(android.graphics.Color.WHITE)
 
-                        drawingPaths.forEach { dp ->
-                            val paint = android.graphics.Paint().apply {
-                                color = dp.color.toArgb()
-                                strokeWidth = dp.strokeWidth
-                                style = android.graphics.Paint.Style.STROKE
-                                strokeCap = android.graphics.Paint.Cap.ROUND
-                                isAntiAlias = true
+                            drawingPaths.forEach { dp ->
+                                val paint = android.graphics.Paint().apply {
+                                    color = dp.color.toArgb()
+                                    strokeWidth = dp.strokeWidth
+                                    style = android.graphics.Paint.Style.STROKE
+                                    strokeCap = android.graphics.Paint.Cap.ROUND
+                                    isAntiAlias = true
+                                }
+                                canvas.drawPath(dp.path.asAndroidPath(), paint)
                             }
-                            canvas.drawPath(dp.path.asAndroidPath(), paint)
-                        }
 
-                        val file = File(context.filesDir, "drawing_${note?.id ?: System.currentTimeMillis()}.png")
-                        FileOutputStream(file).use { out ->
-                            bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
-                        }
+                            val file = File(
+                                context.filesDir,
+                                "drawing_${note?.id ?: System.currentTimeMillis()}.png"
+                            )
+                            FileOutputStream(file).use { out ->
+                                bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
+                            }
 
-                        val updatedNote = Note(
-                            id = note?.id ?: 0,
-                            title = "Drawing ${System.currentTimeMillis()}",
-                            content = "",
-                            color = noteColor.hashCode(),
-                            createdAt = note?.createdAt ?: System.currentTimeMillis(),
-                            updatedAt = System.currentTimeMillis(),
-                            isPinned = note?.isPinned ?: false,
-                            spanCount = note?.spanCount ?: 1,
-                            hasDrawing = true,
-                            drawingPath = file.absolutePath
-                        )
-                        onSaveDrawing(updatedNote)
-                        onNavigateBack()
+                            val updatedNote = Note(
+                                id = note?.id ?: 0,
+                                title = "Drawing",
+                                content = "",  // No rich text content
+                                color = noteColor.hashCode(),
+                                createdAt = note?.createdAt ?: System.currentTimeMillis(),
+                                updatedAt = System.currentTimeMillis(),
+                                isPinned = note?.isPinned ?: false,
+                                spanCount = note?.spanCount ?: 1,
+                                hasDrawing = true,
+                                drawingPath = file.absolutePath
+                            )
+                            onSaveDrawing(updatedNote)
+                            onNavigateBack()
+                        }
                     },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     shape = RoundedCornerShape(16.dp)
@@ -193,79 +223,229 @@ fun DrawingScreen(
         }
     ) { paddingValues ->
         Column(
-            modifier = Modifier.fillMaxSize().background(noteColor).padding(paddingValues)
+            modifier = Modifier
+                .fillMaxSize()
+                .background(noteColor)
+                .padding(paddingValues)
         ) {
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth().weight(1f).padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(16.dp),
                 color = Color.White,
                 shadowElevation = 4.dp
             ) {
-                Canvas(
-                    modifier = Modifier.fillMaxSize().pointerInput(Unit) {
-                        detectDragGestures(
-                            onDragStart = { offset -> currentPath = Path().apply { moveTo(offset.x, offset.y) } },
-                            onDrag = { change, _ -> currentPath.lineTo(change.position.x, change.position.y) },
-                            onDragEnd = {
-                                drawingPaths = drawingPaths + DrawingPath(currentPath, currentDrawingColor, currentStrokeWidth)
-                                currentPath = Path()
-                                undoStack = emptyList()
-                            }
+                // Show existing drawing OR canvas for new drawing
+                if (isViewingExisting) {
+                    // Display saved drawing (read-only)
+                    val bitmap = remember(note?.drawingPath) {
+                        BitmapFactory.decodeFile(note?.drawingPath)
+                    }
+                    bitmap?.let {
+                        Image(
+                            bitmap = it.asImageBitmap(),
+                            contentDescription = "Drawing",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
                         )
                     }
-                ) {
-                    drawingPaths.forEach { dp ->
-                        drawPath(path = dp.path, color = dp.color, style = Stroke(width = dp.strokeWidth, cap = StrokeCap.Round))
+                } else {
+                    // Canvas for new drawing
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pointerInput(Unit) {
+                                detectDragGestures(
+                                    onDragStart = { offset ->
+                                        currentPath = Path().apply {
+                                            moveTo(offset.x, offset.y)
+                                        }
+                                    },
+                                    onDrag = { change, _ ->
+                                        currentPath.lineTo(
+                                            change.position.x,
+                                            change.position.y
+                                        )
+                                    },
+                                    onDragEnd = {
+                                        drawingPaths = drawingPaths + DrawingPath(
+                                            currentPath,
+                                            currentDrawingColor,
+                                            currentStrokeWidth
+                                        )
+                                        currentPath = Path()
+                                        undoStack = emptyList()
+                                    }
+                                )
+                            }
+                    ) {
+                        drawingPaths.forEach { dp ->
+                            drawPath(
+                                path = dp.path,
+                                color = dp.color,
+                                style = Stroke(
+                                    width = dp.strokeWidth,
+                                    cap = StrokeCap.Round
+                                )
+                            )
+                        }
+                        drawPath(
+                            path = currentPath,
+                            color = currentDrawingColor,
+                            style = Stroke(
+                                width = currentStrokeWidth,
+                                cap = StrokeCap.Round
+                            )
+                        )
                     }
-                    drawPath(path = currentPath, color = currentDrawingColor, style = Stroke(width = currentStrokeWidth, cap = StrokeCap.Round))
                 }
             }
 
-            Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 3.dp) {
-                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Surface(shape = CircleShape, color = currentDrawingColor, modifier = Modifier.size(48.dp).clickable { showDrawingColorPicker = true }, border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.outline)) {}
-                            OutlinedButton(onClick = { drawingPaths = emptyList(); undoStack = emptyList(); currentPath = Path() }, shape = RoundedCornerShape(12.dp)) {
-                                Icon(Icons.Outlined.Delete, "Clear", modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Clear")
+            // Show toolbar only for new drawings
+            if (!isViewingExisting) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 3.dp
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = currentDrawingColor,
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clickable { showDrawingColorPicker = true },
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        2.dp,
+                                        MaterialTheme.colorScheme.outline
+                                    )
+                                ) {}
+                                OutlinedButton(
+                                    onClick = {
+                                        drawingPaths = emptyList()
+                                        undoStack = emptyList()
+                                        currentPath = Path()
+                                    },
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.Delete,
+                                        "Clear",
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Clear")
+                                }
                             }
                         }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "Stroke: ${currentStrokeWidth.toInt()}px",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Slider(
+                            value = currentStrokeWidth,
+                            onValueChange = { currentStrokeWidth = it },
+                            valueRange = 1f..50f,
+                            steps = 48
+                        )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Stroke: ${currentStrokeWidth.toInt()}px", style = MaterialTheme.typography.bodySmall)
-                    Slider(value = currentStrokeWidth, onValueChange = { currentStrokeWidth = it }, valueRange = 1f..50f, steps = 48)
                 }
             }
         }
     }
 
     if (showColorPicker) {
-        ColorPickerBottomSheet(currentColor = noteColor, onColorSelected = { noteColor = it; showColorPicker = false }, onDismiss = { showColorPicker = false }, sheetState = sheetState)
+        ColorPickerBottomSheet(
+            currentColor = noteColor,
+            onColorSelected = {
+                noteColor = it
+                showColorPicker = false
+            },
+            onDismiss = { showColorPicker = false },
+            sheetState = sheetState
+        )
     }
 
     if (showDrawingColorPicker) {
-        val colors = listOf(Color.Black, Color.Red, Color(0xFFFF6B00), Color(0xFFFFC107), Color.Green, Color.Blue, Color(0xFF9C27B0), Color(0xFFE91E63), Color.Gray, Color.White)
+        val colors = listOf(
+            Color.Black, Color.Red, Color(0xFFFF6B00), Color(0xFFFFC107),
+            Color.Green, Color.Blue, Color(0xFF9C27B0), Color(0xFFE91E63),
+            Color.Gray, Color.White
+        )
         AlertDialog(
             onDismissRequest = { showDrawingColorPicker = false },
             title = { Text("Choose Color") },
             text = {
                 Column {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         colors.take(5).forEach { color ->
-                            Surface(shape = CircleShape, color = color, modifier = Modifier.size(40.dp).weight(1f).clickable { currentDrawingColor = color; showDrawingColorPicker = false }, border = if (color == currentDrawingColor) androidx.compose.foundation.BorderStroke(3.dp, MaterialTheme.colorScheme.primary) else androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)) {}
+                            Surface(
+                                shape = CircleShape,
+                                color = color,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .weight(1f)
+                                    .clickable {
+                                        currentDrawingColor = color
+                                        showDrawingColorPicker = false
+                                    },
+                                border = if (color == currentDrawingColor)
+                                    androidx.compose.foundation.BorderStroke(
+                                        3.dp,
+                                        MaterialTheme.colorScheme.primary
+                                    )
+                                else
+                                    androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
+                            ) {}
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         colors.drop(5).forEach { color ->
-                            Surface(shape = CircleShape, color = color, modifier = Modifier.size(40.dp).weight(1f).clickable { currentDrawingColor = color; showDrawingColorPicker = false }, border = if (color == currentDrawingColor) androidx.compose.foundation.BorderStroke(3.dp, MaterialTheme.colorScheme.primary) else androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)) {}
+                            Surface(
+                                shape = CircleShape,
+                                color = color,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .weight(1f)
+                                    .clickable {
+                                        currentDrawingColor = color
+                                        showDrawingColorPicker = false
+                                    },
+                                border = if (color == currentDrawingColor)
+                                    androidx.compose.foundation.BorderStroke(
+                                        3.dp,
+                                        MaterialTheme.colorScheme.primary
+                                    )
+                                else
+                                    androidx.compose.foundation.BorderStroke(1.dp, Color.Gray)
+                            ) {}
                         }
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showDrawingColorPicker = false }) { Text("Close") } }
+            confirmButton = {
+                TextButton(onClick = { showDrawingColorPicker = false }) {
+                    Text("Close")
+                }
+            }
         )
     }
 
@@ -275,8 +455,21 @@ fun DrawingScreen(
             icon = { Icon(Icons.Outlined.Delete, null) },
             title = { Text("Delete Drawing?") },
             text = { Text("This drawing will be permanently deleted.") },
-            confirmButton = { TextButton(onClick = { onDeleteDrawing(); onNavigateBack() }) { Text("Delete", color = MaterialTheme.colorScheme.error) } },
-            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } }
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteDrawing()
+                        onNavigateBack()
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 }

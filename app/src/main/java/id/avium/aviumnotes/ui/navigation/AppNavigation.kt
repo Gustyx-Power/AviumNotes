@@ -84,9 +84,19 @@ fun AppNavigation() {
                 notes = notes,
                 searchQuery = searchQuery,
                 onSearchQueryChange = { viewModel.updateSearchQuery(it) },
-                onNoteClick = { noteId -> navController.navigate("editor/$noteId") },
+                onNoteClick = { noteId ->
+                    // Check if note is drawing or text
+                    val note = notes.find { it.id == noteId }
+                    if (note?.hasDrawing == true && note.content.isEmpty()) {
+                        // Pure drawing note -> Open DrawingScreen
+                        navController.navigate("drawing/$noteId")
+                    } else {
+                        // Text note -> Open RichTextEditor
+                        navController.navigate("editor/$noteId")
+                    }
+                },
                 onAddNote = { navController.navigate("editor/new") },
-                onAddDrawing = { navController.navigate("drawing/new") },  // NEW
+                onAddDrawing = { navController.navigate("drawing/new") },
                 onDeleteNote = { note -> viewModel.deleteNote(note) },
                 onTogglePin = { id, isPinned -> viewModel.togglePinStatus(id, isPinned) },
                 onResizeCard = { note, newSpan ->
@@ -102,7 +112,7 @@ fun AppNavigation() {
             )
         }
 
-        // Note Editor Route
+        // Note Editor Route (Text only)
         composable(
             route = "editor/{noteId}",
             arguments = listOf(navArgument("noteId") { type = NavType.StringType })
@@ -162,7 +172,7 @@ fun AppNavigation() {
             }
         }
 
-        // Drawing Screen Route (NEW - Simplified)
+        // Drawing Screen Route (Drawing only)
         composable(
             route = "drawing/{noteId}",
             arguments = listOf(navArgument("noteId") { type = NavType.StringType })
