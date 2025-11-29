@@ -62,6 +62,7 @@ fun DrawingScreen(
 
     var drawingPaths by remember { mutableStateOf(listOf<DrawingPath>()) }
     var currentPath by remember { mutableStateOf(Path()) }
+    var pathVersion by remember { mutableIntStateOf(0) } // Trigger recomposition
     var currentDrawingColor by remember { mutableStateOf(Color.Black) }
     var currentStrokeWidth by remember { mutableStateOf(5f) }
     var undoStack by remember { mutableStateOf(listOf<DrawingPath>()) }
@@ -262,12 +263,14 @@ fun DrawingScreen(
                                         currentPath = Path().apply {
                                             moveTo(offset.x, offset.y)
                                         }
+                                        pathVersion++ // Trigger recomposition
                                     },
                                     onDrag = { change, _ ->
                                         currentPath.lineTo(
                                             change.position.x,
                                             change.position.y
                                         )
+                                        pathVersion++ // Trigger recomposition
                                     },
                                     onDragEnd = {
                                         drawingPaths = drawingPaths + DrawingPath(
@@ -281,6 +284,9 @@ fun DrawingScreen(
                                 )
                             }
                     ) {
+                        // Reference pathVersion to ensure recomposition on path changes
+                        pathVersion.let { }
+
                         drawingPaths.forEach { dp ->
                             drawPath(
                                 path = dp.path,
