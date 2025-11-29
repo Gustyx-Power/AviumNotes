@@ -114,6 +114,54 @@ fun RichTextEditorScreen(
                     if (!isNewNote) {
                         IconButton(onClick = { showMoreMenu = true }) { Icon(Icons.Outlined.MoreVert, "More", tint = textColor) }
                         DropdownMenu(expanded = showMoreMenu, onDismissRequest = { showMoreMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Export as PNG") },
+                                onClick = {
+                                    showMoreMenu = false
+                                    // Export note as PNG
+                                    val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
+                                        text = richTextState.annotatedString.text,
+                                        title = title.ifEmpty { "Untitled" },
+                                        backgroundColor = noteColor.hashCode()
+                                    )
+
+                                    val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPng(
+                                        context,
+                                        bitmap,
+                                        "${title.ifEmpty { "note" }}_${System.currentTimeMillis()}.png"
+                                    )
+
+                                    if (uri != null) {
+                                        android.widget.Toast.makeText(context, "Exported to Pictures/AviumNotes", android.widget.Toast.LENGTH_LONG).show()
+                                    }
+                                },
+                                leadingIcon = { Icon(Icons.Outlined.Image, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Export as PDF") },
+                                onClick = {
+                                    showMoreMenu = false
+                                    // Export note as PDF
+                                    val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
+                                        text = richTextState.annotatedString.text,
+                                        title = title.ifEmpty { "Untitled" },
+                                        backgroundColor = noteColor.hashCode()
+                                    )
+
+                                    val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPdf(
+                                        context,
+                                        bitmap,
+                                        title.ifEmpty { "Untitled" },
+                                        "${title.ifEmpty { "note" }}_${System.currentTimeMillis()}.pdf"
+                                    )
+
+                                    if (uri != null) {
+                                        android.widget.Toast.makeText(context, "Exported to Documents/AviumNotes", android.widget.Toast.LENGTH_LONG).show()
+                                    }
+                                },
+                                leadingIcon = { Icon(Icons.Outlined.Description, null) }
+                            )
+                            HorizontalDivider()
                             DropdownMenuItem(text = { Text("Share") }, onClick = { showMoreMenu = false }, leadingIcon = { Icon(Icons.Outlined.Share, null) })
                             DropdownMenuItem(text = { Text("Delete", color = MaterialTheme.colorScheme.error) }, onClick = { showMoreMenu = false; showDeleteDialog = true }, leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) })
                         }

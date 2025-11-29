@@ -95,6 +95,43 @@ fun NoteEditorScreen(
                 onDeleteClick = {
                     showMoreMenu = false
                     showDeleteDialog = true
+                },
+                onExportPng = {
+                    // Export note as PNG
+                    val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
+                        text = content,
+                        title = title.ifEmpty { "Untitled" },
+                        backgroundColor = noteColor.hashCode()
+                    )
+
+                    val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPng(
+                        context,
+                        bitmap,
+                        "${title.ifEmpty { "note" }}_${System.currentTimeMillis()}.png"
+                    )
+
+                    if (uri != null) {
+                        android.widget.Toast.makeText(context, "Exported to Pictures/AviumNotes", android.widget.Toast.LENGTH_LONG).show()
+                    }
+                },
+                onExportPdf = {
+                    // Export note as PDF
+                    val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
+                        text = content,
+                        title = title.ifEmpty { "Untitled" },
+                        backgroundColor = noteColor.hashCode()
+                    )
+
+                    val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPdf(
+                        context,
+                        bitmap,
+                        title.ifEmpty { "Untitled" },
+                        "${title.ifEmpty { "note" }}_${System.currentTimeMillis()}.pdf"
+                    )
+
+                    if (uri != null) {
+                        android.widget.Toast.makeText(context, "Exported to Documents/AviumNotes", android.widget.Toast.LENGTH_LONG).show()
+                    }
                 }
             )
         },
@@ -288,7 +325,9 @@ fun EditorTopBar(
     onMoreClick: () -> Unit,
     showMoreMenu: Boolean,
     onDismissMenu: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    onExportPng: () -> Unit = {},
+    onExportPdf: () -> Unit = {}
 ) {
     TopAppBar(
         title = {},
@@ -351,6 +390,27 @@ fun EditorTopBar(
                     expanded = showMoreMenu,
                     onDismissRequest = onDismissMenu
                 ) {
+                    DropdownMenuItem(
+                        text = { Text("Export as PNG") },
+                        onClick = {
+                            onDismissMenu()
+                            onExportPng()
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Outlined.Image, contentDescription = null)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Export as PDF") },
+                        onClick = {
+                            onDismissMenu()
+                            onExportPdf()
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Outlined.Description, contentDescription = null)
+                        }
+                    )
+                    HorizontalDivider()
                     DropdownMenuItem(
                         text = { Text("Share") },
                         onClick = { onDismissMenu() },
