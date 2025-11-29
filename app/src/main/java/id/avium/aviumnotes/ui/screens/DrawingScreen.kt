@@ -137,6 +137,47 @@ fun DrawingScreen(
                         Icon(Icons.Outlined.Palette, "Background", tint = textColor)
                     }
 
+                    // Export options for both new and existing drawings
+                    if (drawingPaths.isNotEmpty()) {
+                        IconButton(
+                            onClick = {
+                                // Quick export to PNG
+                                val screenWidth = context.resources.displayMetrics.widthPixels
+                                val screenHeight = context.resources.displayMetrics.heightPixels
+                                val density = context.resources.displayMetrics.density
+                                val canvasWidth = screenWidth - (32 * density).toInt()
+                                val canvasHeight = screenHeight - (200 * density).toInt()
+
+                                val bitmap = Bitmap.createBitmap(canvasWidth, canvasHeight, Bitmap.Config.ARGB_8888)
+                                val canvas = android.graphics.Canvas(bitmap)
+                                canvas.drawColor(android.graphics.Color.WHITE)
+
+                                drawingPaths.forEach { dp ->
+                                    val paint = android.graphics.Paint().apply {
+                                        color = dp.color.toArgb()
+                                        strokeWidth = dp.strokeWidth
+                                        style = android.graphics.Paint.Style.STROKE
+                                        strokeCap = android.graphics.Paint.Cap.ROUND
+                                        isAntiAlias = true
+                                    }
+                                    canvas.drawPath(dp.path.asAndroidPath(), paint)
+                                }
+
+                                val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPng(
+                                    context,
+                                    bitmap,
+                                    "drawing_${System.currentTimeMillis()}.png"
+                                )
+
+                                if (uri != null) {
+                                    android.widget.Toast.makeText(context, "Exported to Pictures/AviumNotes", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Outlined.FileDownload, "Export", tint = textColor)
+                        }
+                    }
+
                     if (!isNewDrawing) {
                         IconButton(onClick = { showMoreMenu = true }) {
                             Icon(Icons.Outlined.MoreVert, "More", tint = textColor)
@@ -145,6 +186,84 @@ fun DrawingScreen(
                             expanded = showMoreMenu,
                             onDismissRequest = { showMoreMenu = false }
                         ) {
+                            DropdownMenuItem(
+                                text = { Text("Export as PNG") },
+                                onClick = {
+                                    showMoreMenu = false
+                                    // Export drawing to PNG
+                                    val screenWidth = context.resources.displayMetrics.widthPixels
+                                    val screenHeight = context.resources.displayMetrics.heightPixels
+                                    val density = context.resources.displayMetrics.density
+                                    val canvasWidth = screenWidth - (32 * density).toInt()
+                                    val canvasHeight = screenHeight - (200 * density).toInt()
+
+                                    val bitmap = Bitmap.createBitmap(canvasWidth, canvasHeight, Bitmap.Config.ARGB_8888)
+                                    val canvas = android.graphics.Canvas(bitmap)
+                                    canvas.drawColor(android.graphics.Color.WHITE)
+
+                                    drawingPaths.forEach { dp ->
+                                        val paint = android.graphics.Paint().apply {
+                                            color = dp.color.toArgb()
+                                            strokeWidth = dp.strokeWidth
+                                            style = android.graphics.Paint.Style.STROKE
+                                            strokeCap = android.graphics.Paint.Cap.ROUND
+                                            isAntiAlias = true
+                                        }
+                                        canvas.drawPath(dp.path.asAndroidPath(), paint)
+                                    }
+
+                                    val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPng(
+                                        context,
+                                        bitmap,
+                                        "drawing_${System.currentTimeMillis()}.png"
+                                    )
+
+                                    if (uri != null) {
+                                        android.widget.Toast.makeText(context, "Exported to Pictures/AviumNotes", android.widget.Toast.LENGTH_LONG).show()
+                                    }
+                                },
+                                leadingIcon = { Icon(Icons.Outlined.Image, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Export as PDF") },
+                                onClick = {
+                                    showMoreMenu = false
+                                    // Export drawing to PDF
+                                    val screenWidth = context.resources.displayMetrics.widthPixels
+                                    val screenHeight = context.resources.displayMetrics.heightPixels
+                                    val density = context.resources.displayMetrics.density
+                                    val canvasWidth = screenWidth - (32 * density).toInt()
+                                    val canvasHeight = screenHeight - (200 * density).toInt()
+
+                                    val bitmap = Bitmap.createBitmap(canvasWidth, canvasHeight, Bitmap.Config.ARGB_8888)
+                                    val canvas = android.graphics.Canvas(bitmap)
+                                    canvas.drawColor(android.graphics.Color.WHITE)
+
+                                    drawingPaths.forEach { dp ->
+                                        val paint = android.graphics.Paint().apply {
+                                            color = dp.color.toArgb()
+                                            strokeWidth = dp.strokeWidth
+                                            style = android.graphics.Paint.Style.STROKE
+                                            strokeCap = android.graphics.Paint.Cap.ROUND
+                                            isAntiAlias = true
+                                        }
+                                        canvas.drawPath(dp.path.asAndroidPath(), paint)
+                                    }
+
+                                    val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPdf(
+                                        context,
+                                        bitmap,
+                                        note?.title ?: "Drawing",
+                                        "drawing_${System.currentTimeMillis()}.pdf"
+                                    )
+
+                                    if (uri != null) {
+                                        android.widget.Toast.makeText(context, "Exported to Documents/AviumNotes", android.widget.Toast.LENGTH_LONG).show()
+                                    }
+                                },
+                                leadingIcon = { Icon(Icons.Outlined.Description, null) }
+                            )
+                            HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
                                 onClick = {
