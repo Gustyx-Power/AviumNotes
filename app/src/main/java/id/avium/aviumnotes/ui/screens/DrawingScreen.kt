@@ -72,12 +72,22 @@ fun DrawingScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showMoreMenu by remember { mutableStateOf(false) }
 
+    // Load existing drawing data for editing
+    LaunchedEffect(note?.drawingData) {
+        if (note?.drawingData != null && drawingPaths.isEmpty()) {
+            try {
+                val loadedPaths = id.avium.aviumnotes.ui.utils.DrawingSerializer
+                    .deserializeDrawingPaths(note.drawingData)
+                drawingPaths = loadedPaths
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     val textColor = remember(noteColor) { getContrastColor(noteColor) }
     val sheetState = rememberModalBottomSheetState()
     val isNewDrawing = note == null
-
-    // Check if viewing existing drawing (read-only)
-    val isViewingExisting = note?.hasDrawing == true && note.drawingPath != null && drawingPaths.isEmpty()
 
     Scaffold(
         topBar = {
@@ -89,7 +99,7 @@ fun DrawingScreen(
                     }
                 },
                 actions = {
-                    if (!isViewingExisting) {
+                    // Always show undo/redo for editing
                         IconButton(
                             onClick = {
                                 if (drawingPaths.isNotEmpty()) {
@@ -122,7 +132,6 @@ fun DrawingScreen(
                                 tint = if (undoStack.isNotEmpty()) textColor else textColor.copy(alpha = 0.3f)
                             )
                         }
-                    }
 
                     IconButton(onClick = { showColorPicker = true }) {
                         Icon(Icons.Outlined.Palette, "Background", tint = textColor)
@@ -157,63 +166,64 @@ fun DrawingScreen(
             )
         },
         floatingActionButton = {
-            if (drawingPaths.isNotEmpty() || isViewingExisting) {
+            if (drawingPaths.isNotEmpty()) {
                 FloatingActionButton(
                     onClick = {
-                        if (isViewingExisting) {
-                            // Just go back if viewing existing
-                            onNavigateBack()
-                        } else {
-                            // Save new drawing
-                            val screenWidth = context.resources.displayMetrics.widthPixels
-                            val screenHeight = context.resources.displayMetrics.heightPixels
-                            val density = context.resources.displayMetrics.density
+                        // Save drawing with editable data
+                        val screenWidth = context.resources.displayMetrics.widthPixels
+                        val screenHeight = context.resources.displayMetrics.heightPixels
+                        val density = context.resources.displayMetrics.density
 
-                            val canvasWidth = screenWidth - (32 * density).toInt()
-                            val canvasHeight = screenHeight - (200 * density).toInt()
+                        val canvasWidth = screenWidth - (32 * density).toInt()
+                        val canvasHeight = screenHeight - (200 * density).toInt()
 
-                            val bitmap = Bitmap.createBitmap(
-                                canvasWidth,
-                                canvasHeight,
-                                Bitmap.Config.ARGB_8888
-                            )
-                            val canvas = android.graphics.Canvas(bitmap)
-                            canvas.drawColor(android.graphics.Color.WHITE)
+                        // Create bitmap preview
+                        val bitmap = Bitmap.createBitmap(
+                            canvasWidth,
+                            canvasHeight,
+                            Bitmap.Config.ARGB_8888
+                        )
+                        val canvas = android.graphics.Canvas(bitmap)
+                        canvas.drawColor(android.graphics.Color.WHITE)
 
-                            drawingPaths.forEach { dp ->
-                                val paint = android.graphics.Paint().apply {
-                                    color = dp.color.toArgb()
-                                    strokeWidth = dp.strokeWidth
-                                    style = android.graphics.Paint.Style.STROKE
-                                    strokeCap = android.graphics.Paint.Cap.ROUND
-                                    isAntiAlias = true
-                                }
-                                canvas.drawPath(dp.path.asAndroidPath(), paint)
+                        drawingPaths.forEach { dp ->
+                            val paint = android.graphics.Paint().apply {
+                                color = dp.color.toArgb()
+                                strokeWidth = dp.strokeWidth
+                                style = android.graphics.Paint.Style.STROKE
+                                strokeCap = android.graphics.Paint.Cap.ROUND
+                                isAntiAlias = true
                             }
-
-                            val file = File(
-                                context.filesDir,
-                                "drawing_${note?.id ?: System.currentTimeMillis()}.png"
-                            )
-                            FileOutputStream(file).use { out ->
-                                bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
-                            }
-
-                            val updatedNote = Note(
-                                id = note?.id ?: 0,
-                                title = "Drawing",
-                                content = "",  // No rich text content
-                                color = noteColor.hashCode(),
-                                createdAt = note?.createdAt ?: System.currentTimeMillis(),
-                                updatedAt = System.currentTimeMillis(),
-                                isPinned = note?.isPinned ?: false,
-                                spanCount = note?.spanCount ?: 1,
-                                hasDrawing = true,
-                                drawingPath = file.absolutePath
-                            )
-                            onSaveDrawing(updatedNote)
-                            onNavigateBack()
+                            canvas.drawPath(dp.path.asAndroidPath(), paint)
                         }
+
+                        val file = File(
+                            context.filesDir,
+                            "drawing_${note?.id ?: System.currentTimeMillis()}.png"
+                        )
+                        FileOutputStream(file).use { out ->
+                            bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
+                        }
+
+                        // Serialize drawing data for editing
+                        val drawingData = id.avium.aviumnotes.ui.utils.DrawingSerializer
+                            .serializeDrawingPaths(drawingPaths)
+
+                        val updatedNote = Note(
+                            id = note?.id ?: 0,
+                            title = "Drawing",
+                            content = "",  // No rich text content
+                            color = noteColor.hashCode(),
+                            createdAt = note?.createdAt ?: System.currentTimeMillis(),
+                            updatedAt = System.currentTimeMillis(),
+                            isPinned = note?.isPinned ?: false,
+                            spanCount = note?.spanCount ?: 1,
+                            hasDrawing = true,
+                            drawingPath = file.absolutePath,
+                            drawingData = drawingData
+                        )
+                        onSaveDrawing(updatedNote)
+                        onNavigateBack()
                     },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     shape = RoundedCornerShape(16.dp)
@@ -238,23 +248,8 @@ fun DrawingScreen(
                 color = Color.White,
                 shadowElevation = 4.dp
             ) {
-                // Show existing drawing OR canvas for new drawing
-                if (isViewingExisting) {
-                    // Display saved drawing (read-only)
-                    val bitmap = remember(note?.drawingPath) {
-                        BitmapFactory.decodeFile(note?.drawingPath)
-                    }
-                    bitmap?.let {
-                        Image(
-                            bitmap = it.asImageBitmap(),
-                            contentDescription = "Drawing",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit
-                        )
-                    }
-                } else {
-                    // Canvas for new drawing
-                    Canvas(
+                // Canvas for drawing (editable)
+                Canvas(
                         modifier = Modifier
                             .fillMaxSize()
                             .pointerInput(Unit) {
@@ -306,15 +301,13 @@ fun DrawingScreen(
                             )
                         )
                     }
-                }
             }
 
-            // Show toolbar only for new drawings
-            if (!isViewingExisting) {
-                Surface(
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 3.dp
-                ) {
+            // Drawing toolbar
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 3.dp
+            ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -369,7 +362,6 @@ fun DrawingScreen(
                 }
             }
         }
-    }
 
     if (showColorPicker) {
         ColorPickerBottomSheet(
