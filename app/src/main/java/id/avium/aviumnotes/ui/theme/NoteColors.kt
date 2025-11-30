@@ -2,17 +2,18 @@ package id.avium.aviumnotes.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+// MIUI + OneUI inspired color palette - More vibrant and modern
 object NoteColors {
     val White = Color(0xFFFFFFFF)
-    val LightRed = Color(0xFFF28B82)
-    val LightOrange = Color(0xFFFBBC04)
-    val LightYellow = Color(0xFFFFF475)
-    val LightGreen = Color(0xFFCCFF90)
-    val LightCyan = Color(0xFFA7FFEB)
-    val LightBlue = Color(0xFFCBF0F8)
-    val LightPurple = Color(0xFFAECBFA)
-    val LightPink = Color(0xFFFDCFE8)
-    val LightGray = Color(0xFFE8EAED)
+    val LightRed = Color(0xFFFFE5E5)        // Softer red
+    val LightOrange = Color(0xFFFFEDD5)     // Warm orange
+    val LightYellow = Color(0xFFFFF9C4)     // Gentle yellow
+    val LightGreen = Color(0xFFD7F5DC)      // Fresh green
+    val LightCyan = Color(0xFFD0F5F3)       // Cool cyan
+    val LightBlue = Color(0xFFE3F2FD)       // Sky blue
+    val LightPurple = Color(0xFFF3E5F5)     // Lavender
+    val LightPink = Color(0xFFFCE4EC)       // Rose pink
+    val LightGray = Color(0xFFF5F5F5)       // Subtle gray
 
     val colorsList = listOf(
         White,
