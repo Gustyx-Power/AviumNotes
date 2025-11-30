@@ -1,8 +1,11 @@
 package id.avium.aviumnotes.ui.screens
 
+import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,9 +21,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
@@ -32,6 +39,8 @@ import id.avium.aviumnotes.data.preferences.PreferencesManager
 import id.avium.aviumnotes.ui.components.ColorPickerBottomSheet
 import id.avium.aviumnotes.ui.theme.NoteColors
 import id.avium.aviumnotes.ui.utils.getContrastColor
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,114 +84,94 @@ fun RichTextEditorScreen(
 
     val hasChanges = remember(title, richTextState.annotatedString) {
         title != (initialTitle ?: note?.title ?: "") ||
-                richTextState.toHtml() != (initialContent ?: note?.content ?: "")
+                richTextState.toHtml() != (initialContent ?: note?.content ?: "") ||
+                noteColor.hashCode() != (note?.color ?: defaultNoteColor)
     }
 
     val isNewNote = note == null
     val textColor = remember(noteColor) { getContrastColor(noteColor) }
     val sheetState = rememberModalBottomSheetState()
+    val scrollState = rememberScrollState()
 
     Scaffold(
+        containerColor = noteColor,
+        contentWindowInsets = WindowInsets.ime,
         topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (hasChanges && (title.isNotEmpty() || richTextState.annotatedString.text.isNotEmpty())) {
-                            showDiscardDialog = true
-                        } else {
-                            onNavigateBack()
-                        }
-                    }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = textColor)
+            RichEditorTopBar(
+                textColor = textColor,
+                noteColor = noteColor,
+                hasChanges = hasChanges,
+                isNewNote = isNewNote,
+                showFormattingBar = showFormattingBar,
+                onToggleFormat = { showFormattingBar = !showFormattingBar },
+                onBackClick = {
+                    if (hasChanges && (title.isNotEmpty() || richTextState.annotatedString.text.isNotEmpty())) {
+                        showDiscardDialog = true
+                    } else {
+                        onNavigateBack()
                     }
                 },
-                actions = {
-                    AnimatedVisibility(visible = hasChanges, enter = fadeIn() + scaleIn(), exit = fadeOut() + scaleOut()) {
-                        Surface(shape = CircleShape, color = textColor.copy(alpha = 0.1f), modifier = Modifier.padding(end = 8.dp)) {
-                            Text("Unsaved", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.7f), modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
-                        }
-                    }
-                    IconButton(onClick = { showFormattingBar = !showFormattingBar }) {
-                        Icon(Icons.Outlined.TextFields, "Format", tint = textColor)
-                    }
-                    IconButton(onClick = { showColorPicker = true }) {
-                        Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(textColor.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Outlined.Palette, "Color", modifier = Modifier.size(16.dp), tint = textColor)
-                        }
-                    }
-                    if (!isNewNote) {
-                        IconButton(onClick = { showMoreMenu = true }) { Icon(Icons.Outlined.MoreVert, "More", tint = textColor) }
-                        DropdownMenu(expanded = showMoreMenu, onDismissRequest = { showMoreMenu = false }) {
-                            DropdownMenuItem(
-                                text = { Text("Export as PNG") },
-                                onClick = {
-                                    showMoreMenu = false
-                                    // Export note as PNG
-                                    val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
-                                        text = richTextState.annotatedString.text,
-                                        title = title.ifEmpty { "Untitled" },
-                                        backgroundColor = noteColor.hashCode()
-                                    )
+                onColorClick = { showColorPicker = true },
+                onMoreClick = { showMoreMenu = true },
+                showMoreMenu = showMoreMenu,
+                onDismissMenu = { showMoreMenu = false },
+                onDeleteClick = { showMoreMenu = false; showDeleteDialog = true },
+                onExportPng = {
+                    // Export rich text note as PNG
+                    val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
+                        text = richTextState.annotatedString.text,
+                        title = title.ifEmpty { "Untitled" },
+                        backgroundColor = noteColor.toArgb()
+                    )
 
-                                    val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPng(
-                                        context,
-                                        bitmap,
-                                        "${title.ifEmpty { "note" }}_${System.currentTimeMillis()}.png"
-                                    )
+                    val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPng(
+                        context,
+                        bitmap,
+                        "${title.ifEmpty { "note" }}_${System.currentTimeMillis()}.png"
+                    )
 
-                                    if (uri != null) {
-                                        android.widget.Toast.makeText(context, "Exported to Pictures/AviumNotes", android.widget.Toast.LENGTH_LONG).show()
-                                    }
-                                },
-                                leadingIcon = { Icon(Icons.Outlined.Image, null) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Export as PDF") },
-                                onClick = {
-                                    showMoreMenu = false
-                                    // Export note as PDF
-                                    val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
-                                        text = richTextState.annotatedString.text,
-                                        title = title.ifEmpty { "Untitled" },
-                                        backgroundColor = noteColor.hashCode()
-                                    )
-
-                                    val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPdf(
-                                        context,
-                                        bitmap,
-                                        title.ifEmpty { "Untitled" },
-                                        "${title.ifEmpty { "note" }}_${System.currentTimeMillis()}.pdf"
-                                    )
-
-                                    if (uri != null) {
-                                        android.widget.Toast.makeText(context, "Exported to Documents/AviumNotes", android.widget.Toast.LENGTH_LONG).show()
-                                    }
-                                },
-                                leadingIcon = { Icon(Icons.Outlined.Description, null) }
-                            )
-                            HorizontalDivider()
-                            DropdownMenuItem(text = { Text("Share") }, onClick = { showMoreMenu = false }, leadingIcon = { Icon(Icons.Outlined.Share, null) })
-                            DropdownMenuItem(text = { Text("Delete", color = MaterialTheme.colorScheme.error) }, onClick = { showMoreMenu = false; showDeleteDialog = true }, leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) })
-                        }
+                    if (uri != null) {
+                        Toast.makeText(context, "Exported to Pictures/AviumNotes", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = noteColor)
+                onExportPdf = {
+                    // Export rich text note as PDF
+                    val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
+                        text = richTextState.annotatedString.text,
+                        title = title.ifEmpty { "Untitled" },
+                        backgroundColor = noteColor.toArgb()
+                    )
+
+                    val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPdf(
+                        context,
+                        bitmap,
+                        title.ifEmpty { "Untitled" },
+                        "${title.ifEmpty { "note" }}_${System.currentTimeMillis()}.pdf"
+                    )
+
+                    if (uri != null) {
+                        Toast.makeText(context, "Exported to Documents/AviumNotes", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
+                    }
+                }
             )
         },
         floatingActionButton = {
             AnimatedVisibility(
                 visible = title.isNotEmpty() || richTextState.annotatedString.text.isNotEmpty(),
-                enter = scaleIn(),
-                exit = scaleOut()
+                enter = scaleIn() + fadeIn(),
+                exit = scaleOut() + fadeOut()
             ) {
-                FloatingActionButton(
+                ExtendedFloatingActionButton(
                     onClick = {
                         val updatedNote = Note(
                             id = note?.id ?: 0,
                             title = title.ifEmpty { "Untitled" },
                             content = richTextState.toHtml(),
-                            color = noteColor.hashCode(),
+                            color = noteColor.toArgb(),
                             createdAt = note?.createdAt ?: System.currentTimeMillis(),
                             updatedAt = System.currentTimeMillis(),
                             isPinned = note?.isPinned ?: false,
@@ -193,31 +182,57 @@ fun RichTextEditorScreen(
                         onSaveNote(updatedNote)
                         onNavigateBack()
                     },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(Icons.Filled.Check, "Save", modifier = Modifier.size(28.dp))
-                }
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    elevation = FloatingActionButtonDefaults.elevation(6.dp),
+                    icon = { Icon(Icons.Filled.Check, null) },
+                    text = { Text("Save") }
+                )
             }
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(noteColor)
                 .padding(paddingValues)
+                .verticalScroll(scrollState)
         ) {
+            // Metadata Header (Last Modified)
+            if (!isNewNote && note != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Rich Text • ${formatDate(note.updatedAt)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = textColor.copy(alpha = 0.5f)
+                    )
+                }
+            }
+
+            // Title Field
             TextField(
                 value = title,
                 onValueChange = { title = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(stringResource(R.string.note_title_hint), style = MaterialTheme.typography.headlineMedium, color = textColor.copy(alpha = 0.5f)) },
-                textStyle = MaterialTheme.typography.headlineMedium.copy(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = textColor),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                placeholder = {
+                    Text(
+                        stringResource(R.string.note_title_hint),
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = textColor.copy(alpha = 0.4f)
+                        )
+                    )
+                },
+                textStyle = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                ),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
-                    disabledContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                     cursorColor = textColor
@@ -226,32 +241,78 @@ fun RichTextEditorScreen(
                 maxLines = 3
             )
 
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = textColor.copy(alpha = 0.2f), thickness = 1.dp)
-
-            AnimatedVisibility(visible = showFormattingBar, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-                Surface(color = textColor.copy(alpha = 0.1f), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-                        IconButton(onClick = { richTextState.toggleSpanStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold)) }) {
-                            Icon(Icons.Outlined.FormatBold, "Bold", tint = if (richTextState.currentSpanStyle.fontWeight == FontWeight.Bold) MaterialTheme.colorScheme.primary else textColor.copy(alpha = 0.7f))
-                        }
-                        IconButton(onClick = { richTextState.toggleSpanStyle(androidx.compose.ui.text.SpanStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)) }) {
-                            Icon(Icons.Outlined.FormatItalic, "Italic", tint = if (richTextState.currentSpanStyle.fontStyle == androidx.compose.ui.text.font.FontStyle.Italic) MaterialTheme.colorScheme.primary else textColor.copy(alpha = 0.7f))
-                        }
-                        IconButton(onClick = { richTextState.toggleSpanStyle(androidx.compose.ui.text.SpanStyle(textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline)) }) {
-                            Icon(Icons.Outlined.FormatUnderlined, "Underline", tint = if (richTextState.currentSpanStyle.textDecoration == androidx.compose.ui.text.style.TextDecoration.Underline) MaterialTheme.colorScheme.primary else textColor.copy(alpha = 0.7f))
-                        }
-                        IconButton(onClick = { richTextState.toggleSpanStyle(androidx.compose.ui.text.SpanStyle(textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough)) }) {
-                            Icon(Icons.Outlined.FormatStrikethrough, "Strike", tint = if (richTextState.currentSpanStyle.textDecoration == androidx.compose.ui.text.style.TextDecoration.LineThrough) MaterialTheme.colorScheme.primary else textColor.copy(alpha = 0.7f))
-                        }
+            // Formatting Toolbar (Animated)
+            AnimatedVisibility(
+                visible = showFormattingBar,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Surface(
+                    color = textColor.copy(alpha = 0.05f),
+                    shape = RoundedCornerShape(24.dp), // Pill shape
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    border = BorderStroke(1.dp, textColor.copy(alpha = 0.1f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Bold
+                        FormatButton(
+                            icon = Icons.Outlined.FormatBold,
+                            isActive = richTextState.currentSpanStyle.fontWeight == FontWeight.Bold,
+                            textColor = textColor,
+                            onClick = { richTextState.toggleSpanStyle(SpanStyle(fontWeight = FontWeight.Bold)) }
+                        )
+                        // Italic
+                        FormatButton(
+                            icon = Icons.Outlined.FormatItalic,
+                            isActive = richTextState.currentSpanStyle.fontStyle == FontStyle.Italic,
+                            textColor = textColor,
+                            onClick = { richTextState.toggleSpanStyle(SpanStyle(fontStyle = FontStyle.Italic)) }
+                        )
+                        // Underline
+                        FormatButton(
+                            icon = Icons.Outlined.FormatUnderlined,
+                            isActive = richTextState.currentSpanStyle.textDecoration == TextDecoration.Underline,
+                            textColor = textColor,
+                            onClick = { richTextState.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.Underline)) }
+                        )
+                        // Strikethrough
+                        FormatButton(
+                            icon = Icons.Outlined.FormatStrikethrough,
+                            isActive = richTextState.currentSpanStyle.textDecoration == TextDecoration.LineThrough,
+                            textColor = textColor,
+                            onClick = { richTextState.toggleSpanStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) }
+                        )
                     }
                 }
             }
 
+            // Rich Text Editor
             RichTextEditor(
                 state = richTextState,
-                modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = textColor),
-                placeholder = { Text(stringResource(R.string.note_content_hint), color = textColor.copy(alpha = 0.5f)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = 400.dp)
+                    .padding(horizontal = 16.dp),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    color = textColor.copy(alpha = 0.9f),
+                    lineHeight = 28.sp,
+                    fontSize = 17.sp
+                ),
+                placeholder = {
+                    Text(
+                        stringResource(R.string.note_content_hint),
+                        color = textColor.copy(alpha = 0.4f),
+                        fontSize = 17.sp
+                    )
+                },
                 colors = RichTextEditorDefaults.richTextEditorColors(
                     containerColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
@@ -259,20 +320,33 @@ fun RichTextEditorScreen(
                     cursorColor = textColor
                 )
             )
+
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 
+    // --- Dialogs & Bottom Sheet ---
     if (showColorPicker) {
-        ColorPickerBottomSheet(currentColor = noteColor, onColorSelected = { noteColor = it; showColorPicker = false }, onDismiss = { showColorPicker = false }, sheetState = sheetState)
+        ColorPickerBottomSheet(
+            currentColor = noteColor,
+            onColorSelected = { noteColor = it; showColorPicker = false },
+            onDismiss = { showColorPicker = false },
+            sheetState = sheetState
+        )
     }
 
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            icon = { Icon(Icons.Outlined.Delete, null) },
+            icon = { Icon(Icons.Outlined.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
             title = { Text("Delete Note?") },
-            text = { Text("This note will be permanently deleted.") },
-            confirmButton = { TextButton(onClick = { onDeleteNote(); onNavigateBack() }) { Text("Delete", color = MaterialTheme.colorScheme.error) } },
+            text = { Text("This action cannot be undone.") },
+            confirmButton = {
+                Button(
+                    onClick = { onDeleteNote(); onNavigateBack() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) { Text("Delete") }
+            },
             dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } }
         )
     }
@@ -280,11 +354,163 @@ fun RichTextEditorScreen(
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            icon = { Icon(Icons.Outlined.Info, null) },
-            title = { Text("Discard Changes?") },
-            text = { Text("You have unsaved changes.") },
-            confirmButton = { TextButton(onClick = { showDiscardDialog = false; onNavigateBack() }) { Text("Discard", color = MaterialTheme.colorScheme.error) } },
-            dismissButton = { TextButton(onClick = { showDiscardDialog = false }) { Text("Keep Editing") } }
+            icon = { Icon(Icons.Outlined.SaveAs, null) },
+            title = { Text("Unsaved Changes") },
+            text = { Text("Do you want to save before exiting?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        // Logic save same as FAB
+                        val updatedNote = Note(
+                            id = note?.id ?: 0,
+                            title = title.ifEmpty { "Untitled" },
+                            content = richTextState.toHtml(),
+                            color = noteColor.toArgb(),
+                            createdAt = note?.createdAt ?: System.currentTimeMillis(),
+                            updatedAt = System.currentTimeMillis(),
+                            isPinned = note?.isPinned ?: false
+                        )
+                        onSaveNote(updatedNote)
+                        onNavigateBack()
+                    }
+                ) { Text("Save & Exit") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false; onNavigateBack() }, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("Discard") }
+            }
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RichEditorTopBar(
+    textColor: Color,
+    noteColor: Color,
+    hasChanges: Boolean,
+    isNewNote: Boolean,
+    showFormattingBar: Boolean,
+    onToggleFormat: () -> Unit,
+    onBackClick: () -> Unit,
+    onColorClick: () -> Unit,
+    onMoreClick: () -> Unit,
+    showMoreMenu: Boolean,
+    onDismissMenu: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onExportPng: () -> Unit,
+    onExportPdf: () -> Unit
+) {
+    CenterAlignedTopAppBar(
+        title = {},
+        navigationIcon = {
+            Surface(
+                onClick = onBackClick,
+                shape = CircleShape,
+                color = textColor.copy(alpha = 0.05f),
+                modifier = Modifier.padding(start = 12.dp).size(40.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = textColor
+                    )
+                }
+            }
+        },
+        actions = {
+            // Formatting Toggle
+            IconButton(onClick = onToggleFormat) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(if(showFormattingBar) textColor.copy(alpha=0.15f) else Color.Transparent),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Outlined.TextFields,
+                        "Format",
+                        tint = if(showFormattingBar) textColor else textColor.copy(alpha=0.6f)
+                    )
+                }
+            }
+
+            // Color Picker
+            IconButton(onClick = onColorClick) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(textColor.copy(alpha = 0.1f))
+                        .border(1.5.dp, textColor.copy(alpha = 0.5f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.Palette, null, modifier = Modifier.size(16.dp), tint = textColor)
+                }
+            }
+
+            if (!isNewNote) {
+                Box {
+                    IconButton(onClick = onMoreClick) {
+                        Icon(Icons.Outlined.MoreVert, "More", tint = textColor)
+                    }
+                    DropdownMenu(
+                        expanded = showMoreMenu,
+                        onDismissRequest = onDismissMenu,
+                        shape = RoundedCornerShape(16.dp),
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Export PNG") },
+                            onClick = { onDismissMenu(); onExportPng() },
+                            leadingIcon = { Icon(Icons.Outlined.Image, null) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Export PDF") },
+                            onClick = { onDismissMenu(); onExportPdf() },
+                            leadingIcon = { Icon(Icons.Outlined.PictureAsPdf, null) }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        DropdownMenuItem(
+                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                            onClick = onDeleteClick,
+                            leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) }
+                        )
+                    }
+                }
+            }
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = Color.Transparent
+        )
+    )
+}
+
+@Composable
+fun FormatButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isActive: Boolean,
+    textColor: Color,
+    onClick: () -> Unit
+) {
+    val backgroundColor = if (isActive) textColor.copy(alpha = 0.15f) else Color.Transparent
+    val contentColor = if (isActive) textColor else textColor.copy(alpha = 0.4f)
+
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .background(backgroundColor, RoundedCornerShape(12.dp))
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = contentColor
+        )
+    }
+}
+
+private fun formatDate(timestamp: Long): String {
+    val sdf = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault())
+    return sdf.format(Date(timestamp))
 }
