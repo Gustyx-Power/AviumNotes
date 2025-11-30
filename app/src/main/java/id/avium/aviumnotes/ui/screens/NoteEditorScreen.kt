@@ -1,8 +1,9 @@
 package id.avium.aviumnotes.ui.screens
 
+import android.widget.Toast
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -18,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -69,18 +71,22 @@ fun NoteEditorScreen(
     }
 
     val isNewNote = note == null
-    val isFromClipboard = initialTitle != null || initialContent != null
     val textColor = remember(noteColor) { getContrastColor(noteColor) }
 
     val sheetState = rememberModalBottomSheetState()
+    val scrollState = rememberScrollState()
 
     Scaffold(
+        containerColor = noteColor,
+        contentWindowInsets = WindowInsets.ime,
         topBar = {
             EditorTopBar(
                 textColor = textColor,
                 noteColor = noteColor,
+                title = title,
                 hasChanges = hasChanges,
                 isNewNote = isNewNote,
+                scrollElevation = if (scrollState.value > 0) 4.dp else 0.dp,
                 onBackClick = {
                     if (hasChanges && (title.isNotEmpty() || content.isNotEmpty())) {
                         showDiscardDialog = true
@@ -97,11 +103,10 @@ fun NoteEditorScreen(
                     showDeleteDialog = true
                 },
                 onExportPng = {
-                    // Export note as PNG
                     val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
                         text = content,
                         title = title.ifEmpty { "Untitled" },
-                        backgroundColor = noteColor.hashCode()
+                        backgroundColor = noteColor.toArgb()
                     )
 
                     val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPng(
@@ -111,15 +116,17 @@ fun NoteEditorScreen(
                     )
 
                     if (uri != null) {
-                        android.widget.Toast.makeText(context, "Exported to Pictures/AviumNotes", android.widget.Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Exported to Pictures/AviumNotes", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
                     }
                 },
                 onExportPdf = {
-                    // Export note as PDF
+                    // Export plain text note as PDF
                     val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
                         text = content,
                         title = title.ifEmpty { "Untitled" },
-                        backgroundColor = noteColor.hashCode()
+                        backgroundColor = noteColor.toArgb()
                     )
 
                     val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPdf(
@@ -130,27 +137,26 @@ fun NoteEditorScreen(
                     )
 
                     if (uri != null) {
-                        android.widget.Toast.makeText(context, "Exported to Documents/AviumNotes", android.widget.Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Exported to Documents/AviumNotes", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
                     }
                 }
             )
         },
         floatingActionButton = {
             AnimatedVisibility(
-                visible = title.isNotEmpty() || content.isNotEmpty(),
-                enter = scaleIn(animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                )),
-                exit = scaleOut()
+                visible = hasChanges || (isNewNote && (title.isNotEmpty() || content.isNotEmpty())),
+                enter = scaleIn() + fadeIn(),
+                exit = scaleOut() + fadeOut()
             ) {
-                FloatingActionButton(
+                ExtendedFloatingActionButton(
                     onClick = {
                         val updatedNote = Note(
                             id = note?.id ?: 0,
                             title = title.ifEmpty { "Untitled" },
                             content = content,
-                            color = noteColor.hashCode(),
+                            color = noteColor.toArgb(),
                             createdAt = note?.createdAt ?: System.currentTimeMillis(),
                             updatedAt = System.currentTimeMillis(),
                             isPinned = note?.isPinned ?: false
@@ -158,39 +164,63 @@ fun NoteEditorScreen(
                         onSaveNote(updatedNote)
                         onNavigateBack()
                     },
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = "Save",
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    elevation = FloatingActionButtonDefaults.elevation(6.dp),
+                    icon = { Icon(Icons.Filled.Check, null) },
+                    text = { Text("Save") }
+                )
             }
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(noteColor)
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
         ) {
+            // Last Edited Info (iOS Style - Subtle at top)
+            if (!isNewNote && note != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 4.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Last modified ${formatDate(note.updatedAt)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = textColor.copy(alpha = 0.5f)
+                    )
+                    if (content.isNotEmpty()) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(modifier = Modifier.size(3.dp).background(textColor.copy(alpha=0.3f), CircleShape))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "${content.length} chars",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = textColor.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            }
+
+            // Title Field
             TextField(
                 value = title,
                 onValueChange = { title = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 placeholder = {
                     Text(
                         text = stringResource(R.string.note_title_hint),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = textColor.copy(alpha = 0.5f)
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = textColor.copy(alpha = 0.4f)
+                        )
                     )
                 },
-                textStyle = MaterialTheme.typography.headlineMedium.copy(
-                    fontSize = 28.sp,
+                textStyle = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold,
                     color = textColor
                 ),
@@ -202,34 +232,30 @@ fun NoteEditorScreen(
                     unfocusedIndicatorColor = Color.Transparent,
                     cursorColor = textColor
                 ),
-                singleLine = false,
                 maxLines = 3
             )
 
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                color = textColor.copy(alpha = 0.2f),
-                thickness = 1.dp
-            )
-
+            // Content Field
             TextField(
                 value = content,
                 onValueChange = { content = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .defaultMinSize(minHeight = 400.dp),
+                    .defaultMinSize(minHeight = 400.dp)
+                    .padding(horizontal = 8.dp),
                 placeholder = {
                     Text(
                         text = stringResource(R.string.note_content_hint),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = textColor.copy(alpha = 0.5f)
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            lineHeight = 28.sp
+                        ),
+                        color = textColor.copy(alpha = 0.4f)
                     )
                 },
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = 16.sp,
-                    lineHeight = 26.sp,
-                    color = textColor
+                    fontSize = 17.sp,
+                    lineHeight = 28.sp, // Comfortable reading spacing
+                    color = textColor.copy(alpha = 0.9f)
                 ),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
@@ -241,16 +267,11 @@ fun NoteEditorScreen(
                 )
             )
 
-            NoteMetadata(
-                note = note,
-                isNewNote = isNewNote,
-                isFromClipboard = isFromClipboard,
-                initialTitle = initialTitle,
-                textColor = textColor,
-                contentLength = content.length
-            )
+            Spacer(modifier = Modifier.height(100.dp)) // Bottom padding for FAB
         }
     }
+
+    // --- DIALOGS & BOTTOM SHEETS ---
 
     if (showColorPicker) {
         ColorPickerBottomSheet(
@@ -267,23 +288,19 @@ fun NoteEditorScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            icon = { Icon(Icons.Outlined.Delete, contentDescription = null) },
+            icon = { Icon(Icons.Outlined.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
             title = { Text("Delete Note?") },
-            text = { Text("This note will be permanently deleted. This action cannot be undone.") },
+            text = { Text("This action cannot be undone. Are you sure you want to delete this note?") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDeleteNote()
-                        onNavigateBack()
-                    }
+                Button(
+                    onClick = { onDeleteNote(); onNavigateBack() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text("Delete")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
             }
         )
     }
@@ -291,22 +308,34 @@ fun NoteEditorScreen(
     if (showDiscardDialog) {
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
-            icon = { Icon(Icons.Outlined.Info, contentDescription = null) },
-            title = { Text("Discard Changes?") },
-            text = { Text("You have unsaved changes. Do you want to discard them?") },
+            icon = { Icon(Icons.Outlined.SaveAs, null) },
+            title = { Text("Unsaved Changes") },
+            text = { Text("You have unsaved changes. Do you want to save before exiting?") },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = {
-                        showDiscardDialog = false
+                        val updatedNote = Note(
+                            id = note?.id ?: 0,
+                            title = title.ifEmpty { "Untitled" },
+                            content = content,
+                            color = noteColor.toArgb(),
+                            createdAt = note?.createdAt ?: System.currentTimeMillis(),
+                            updatedAt = System.currentTimeMillis(),
+                            isPinned = note?.isPinned ?: false
+                        )
+                        onSaveNote(updatedNote)
                         onNavigateBack()
                     }
                 ) {
-                    Text("Discard", color = MaterialTheme.colorScheme.error)
+                    Text("Save & Exit")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDiscardDialog = false }) {
-                    Text("Keep Editing")
+                TextButton(
+                    onClick = { showDiscardDialog = false; onNavigateBack() },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Discard")
                 }
             }
         )
@@ -318,223 +347,110 @@ fun NoteEditorScreen(
 fun EditorTopBar(
     textColor: Color,
     noteColor: Color,
+    title: String,
     hasChanges: Boolean,
     isNewNote: Boolean,
+    scrollElevation: androidx.compose.ui.unit.Dp,
     onBackClick: () -> Unit,
     onColorClick: () -> Unit,
     onMoreClick: () -> Unit,
     showMoreMenu: Boolean,
     onDismissMenu: () -> Unit,
     onDeleteClick: () -> Unit,
-    onExportPng: () -> Unit = {},
-    onExportPdf: () -> Unit = {}
+    onExportPng: () -> Unit,
+    onExportPdf: () -> Unit
 ) {
-    TopAppBar(
-        title = {},
-        navigationIcon = {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = textColor
-                )
-            }
-        },
-        actions = {
-            AnimatedVisibility(
-                visible = hasChanges,
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut()
-            ) {
-                Surface(
-                    shape = CircleShape,
-                    color = textColor.copy(alpha = 0.1f),
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    Text(
-                        text = "Unsaved",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = textColor.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                }
-            }
-
-            IconButton(onClick = onColorClick) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(textColor.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Palette,
-                        contentDescription = "Color",
-                        modifier = Modifier.size(16.dp),
-                        tint = textColor
-                    )
-                }
-            }
-
-            if (!isNewNote) {
-                IconButton(onClick = onMoreClick) {
-                    Icon(
-                        imageVector = Icons.Outlined.MoreVert,
-                        contentDescription = "More",
-                        tint = textColor
-                    )
-                }
-
-                DropdownMenu(
-                    expanded = showMoreMenu,
-                    onDismissRequest = onDismissMenu
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Export as PNG") },
-                        onClick = {
-                            onDismissMenu()
-                            onExportPng()
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Outlined.Image, contentDescription = null)
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Export as PDF") },
-                        onClick = {
-                            onDismissMenu()
-                            onExportPdf()
-                        },
-                        leadingIcon = {
-                            Icon(Icons.Outlined.Description, contentDescription = null)
-                        }
-                    )
-                    HorizontalDivider()
-                    DropdownMenuItem(
-                        text = { Text("Share") },
-                        onClick = { onDismissMenu() },
-                        leadingIcon = {
-                            Icon(Icons.Outlined.Share, contentDescription = null)
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
-                        onClick = onDeleteClick,
-                        leadingIcon = {
-                            Icon(
-                                Icons.Outlined.Delete,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    )
-                }
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = noteColor
-        )
-    )
-}
-
-@Composable
-fun NoteMetadata(
-    note: Note?,
-    isNewNote: Boolean,
-    isFromClipboard: Boolean,
-    initialTitle: String?,
-    textColor: Color,
-    contentLength: Int
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
+    // Top Bar with seamless transition
+    Surface(
+        color = noteColor,
+        shadowElevation = scrollElevation
     ) {
-        if (!isNewNote && note != null) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = "Created",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = textColor.copy(alpha = 0.5f)
-                    )
-                    Text(
-                        text = formatDate(note.createdAt),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = textColor.copy(alpha = 0.7f)
-                    )
-                }
-
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "Modified",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = textColor.copy(alpha = 0.5f)
-                    )
-                    Text(
-                        text = formatDate(note.updatedAt),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = textColor.copy(alpha = 0.7f)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = textColor.copy(alpha = 0.1f)
-            ) {
-                Text(
-                    text = "$contentLength characters",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = textColor.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-            }
-
-            if (isFromClipboard && isNewNote) {
+        CenterAlignedTopAppBar(
+            title = {
+                // Show title in top bar only when scrolled down (Optional logic)
+                // For now, keep empty for clean look or show "Edit Note"
+            },
+            navigationIcon = {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    onClick = onBackClick,
+                    shape = CircleShape,
+                    color = textColor.copy(alpha = 0.05f), // Subtle circle background
+                    modifier = Modifier.padding(start = 12.dp).size(40.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
+                    Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = Icons.Outlined.ContentPaste,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = textColor.copy(alpha = 0.7f)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (initialTitle?.isNotEmpty() == true)
-                                "From clipboard → Title"
-                            else
-                                "From clipboard → Content",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = textColor.copy(alpha = 0.7f)
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = textColor,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
-            }
-        }
+            },
+            actions = {
+                // Color Picker Button
+                IconButton(onClick = onColorClick) {
+                    Box(
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .background(textColor.copy(alpha = 0.1f))
+                            .border(1.5.dp, textColor.copy(alpha = 0.5f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Filled.Palette,
+                            null,
+                            tint = textColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                if (!isNewNote) {
+                    Box {
+                        IconButton(onClick = onMoreClick) {
+                            Icon(
+                                imageVector = Icons.Outlined.MoreVert,
+                                contentDescription = "More",
+                                tint = textColor
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = onDismissMenu,
+                            shape = RoundedCornerShape(16.dp),
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Export as PNG") },
+                                onClick = { onDismissMenu(); onExportPng() },
+                                leadingIcon = { Icon(Icons.Outlined.Image, null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Export as PDF") },
+                                onClick = { onDismissMenu(); onExportPdf() },
+                                leadingIcon = { Icon(Icons.Outlined.PictureAsPdf, null) }
+                            )
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                            DropdownMenuItem(
+                                text = { Text("Delete Note", color = MaterialTheme.colorScheme.error) },
+                                onClick = onDeleteClick,
+                                leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) }
+                            )
+                        }
+                    }
+                }
+            },
+            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                containerColor = Color.Transparent // Important for seamless look
+            )
+        )
     }
 }
 
 private fun formatDate(timestamp: Long): String {
-    val sdf = SimpleDateFormat("MMM dd, yyyy • HH:mm", Locale.getDefault())
+    val sdf = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
 }
