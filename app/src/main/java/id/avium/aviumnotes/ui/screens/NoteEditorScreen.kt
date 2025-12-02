@@ -105,41 +105,41 @@ fun NoteEditorScreen(
                 onExportPng = {
                     val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
                         text = content,
-                        title = title.ifEmpty { "Untitled" },
+                        title = title.ifEmpty { context.getString(R.string.note_untitled) },
                         backgroundColor = noteColor.toArgb()
                     )
 
                     val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPng(
                         context,
                         bitmap,
-                        "${title.ifEmpty { "note" }}_${System.currentTimeMillis()}.png"
+                        "${title.ifEmpty { context.getString(R.string.file_note_basename) }}_${System.currentTimeMillis()}.png"
                     )
 
                     if (uri != null) {
-                        Toast.makeText(context, "Exported to Pictures/AviumNotes", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.export_png_success), Toast.LENGTH_LONG).show()
                     } else {
-                        Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.export_failed_simple), Toast.LENGTH_SHORT).show()
                     }
                 },
                 onExportPdf = {
                     // Export plain text note as PDF
                     val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
                         text = content,
-                        title = title.ifEmpty { "Untitled" },
+                        title = title.ifEmpty { context.getString(R.string.note_untitled) },
                         backgroundColor = noteColor.toArgb()
                     )
 
                     val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPdf(
                         context,
                         bitmap,
-                        title.ifEmpty { "Untitled" },
-                        "${title.ifEmpty { "note" }}_${System.currentTimeMillis()}.pdf"
+                        title.ifEmpty { context.getString(R.string.note_untitled) },
+                        "${title.ifEmpty { context.getString(R.string.file_note_basename) }}_${System.currentTimeMillis()}.pdf"
                     )
 
                     if (uri != null) {
-                        Toast.makeText(context, "Exported to Documents/AviumNotes", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.export_pdf_success), Toast.LENGTH_LONG).show()
                     } else {
-                        Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.export_failed_simple), Toast.LENGTH_SHORT).show()
                     }
                 }
             )
@@ -154,7 +154,7 @@ fun NoteEditorScreen(
                     onClick = {
                         val updatedNote = Note(
                             id = note?.id ?: 0,
-                            title = title.ifEmpty { "Untitled" },
+                            title = title.ifEmpty { context.getString(R.string.note_untitled) },
                             content = content,
                             color = noteColor.toArgb(),
                             createdAt = note?.createdAt ?: System.currentTimeMillis(),
@@ -168,7 +168,7 @@ fun NoteEditorScreen(
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     elevation = FloatingActionButtonDefaults.elevation(6.dp),
                     icon = { Icon(Icons.Filled.Check, null) },
-                    text = { Text("Save") }
+                    text = { Text(stringResource(R.string.save)) }
                 )
             }
         }
@@ -189,7 +189,7 @@ fun NoteEditorScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Last modified ${formatDate(note.updatedAt)}",
+                        text = stringResource(R.string.note_modified, formatDate(note.updatedAt)),
                         style = MaterialTheme.typography.labelSmall,
                         color = textColor.copy(alpha = 0.5f)
                     )
@@ -198,7 +198,7 @@ fun NoteEditorScreen(
                         Box(modifier = Modifier.size(3.dp).background(textColor.copy(alpha=0.3f), CircleShape))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "${content.length} chars",
+                            text = stringResource(R.string.note_chars_count, content.length),
                             style = MaterialTheme.typography.labelSmall,
                             color = textColor.copy(alpha = 0.5f)
                         )
@@ -289,18 +289,18 @@ fun NoteEditorScreen(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             icon = { Icon(Icons.Outlined.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Delete Note?") },
-            text = { Text("This action cannot be undone. Are you sure you want to delete this note?") },
+            title = { Text(stringResource(R.string.note_delete_title)) },
+            text = { Text(stringResource(R.string.note_delete_message)) },
             confirmButton = {
                 Button(
                     onClick = { onDeleteNote(); onNavigateBack() },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Delete")
+                    Text(stringResource(R.string.note_delete_confirm))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.note_delete_cancel)) }
             }
         )
     }
@@ -309,14 +309,14 @@ fun NoteEditorScreen(
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
             icon = { Icon(Icons.Outlined.SaveAs, null) },
-            title = { Text("Unsaved Changes") },
-            text = { Text("You have unsaved changes. Do you want to save before exiting?") },
+            title = { Text(stringResource(R.string.editor_discard_title)) },
+            text = { Text(stringResource(R.string.editor_discard_message)) },
             confirmButton = {
                 Button(
                     onClick = {
                         val updatedNote = Note(
                             id = note?.id ?: 0,
-                            title = title.ifEmpty { "Untitled" },
+                            title = title.ifEmpty { context.getString(R.string.note_untitled) },
                             content = content,
                             color = noteColor.toArgb(),
                             createdAt = note?.createdAt ?: System.currentTimeMillis(),
@@ -327,7 +327,7 @@ fun NoteEditorScreen(
                         onNavigateBack()
                     }
                 ) {
-                    Text("Save & Exit")
+                    Text(stringResource(R.string.save))
                 }
             },
             dismissButton = {
@@ -335,7 +335,7 @@ fun NoteEditorScreen(
                     onClick = { showDiscardDialog = false; onNavigateBack() },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Discard")
+                    Text(stringResource(R.string.discard))
                 }
             }
         )
@@ -380,7 +380,7 @@ fun EditorTopBar(
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.main_back),
                             tint = textColor,
                             modifier = Modifier.size(20.dp)
                         )
@@ -412,7 +412,7 @@ fun EditorTopBar(
                         IconButton(onClick = onMoreClick) {
                             Icon(
                                 imageVector = Icons.Outlined.MoreVert,
-                                contentDescription = "More",
+                                contentDescription = stringResource(R.string.editor_more),
                                 tint = textColor
                             )
                         }
@@ -424,18 +424,18 @@ fun EditorTopBar(
                             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Export as PNG") },
+                                text = { Text(stringResource(R.string.export_png)) },
                                 onClick = { onDismissMenu(); onExportPng() },
                                 leadingIcon = { Icon(Icons.Outlined.Image, null) }
                             )
                             DropdownMenuItem(
-                                text = { Text("Export as PDF") },
+                                text = { Text(stringResource(R.string.export_pdf)) },
                                 onClick = { onDismissMenu(); onExportPdf() },
                                 leadingIcon = { Icon(Icons.Outlined.PictureAsPdf, null) }
                             )
                             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                             DropdownMenuItem(
-                                text = { Text("Delete Note", color = MaterialTheme.colorScheme.error) },
+                                text = { Text(stringResource(R.string.note_delete_title), color = MaterialTheme.colorScheme.error) },
                                 onClick = onDeleteClick,
                                 leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) }
                             )

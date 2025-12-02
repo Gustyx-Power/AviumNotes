@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import id.avium.aviumnotes.R
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -36,23 +38,23 @@ fun OnboardingScreen(
     val pages = listOf(
         OnboardingPage(
             icon = Icons.Outlined.EditNote,
-            title = "Avium Notes",
-            description = "Create beautiful notes with rich text formatting and colors"
+            title = stringResource(R.string.onboarding_title),
+            description = stringResource(R.string.onboarding_description)
         ),
         OnboardingPage(
             icon = Icons.Outlined.Palette,
-            title = "Colorful Organization",
-            description = "Organize your notes with custom colors and categories"
+            title = stringResource(R.string.onboarding_feature_2_title),
+            description = stringResource(R.string.onboarding_feature_2_desc)
         ),
         OnboardingPage(
             icon = Icons.Outlined.ContentPaste,
-            title = "Smart Clipboard",
-            description = "Automatically capture clipboard content and save as notes"
+            title = stringResource(R.string.onboarding_feature_3_title),
+            description = stringResource(R.string.onboarding_feature_3_desc)
         ),
         OnboardingPage(
             icon = Icons.Outlined.BubbleChart,
-            title = "Floating Bubble",
-            description = "Quick access to your notes with floating bubble overlay"
+            title = stringResource(R.string.permission_overlay_title),
+            description = stringResource(R.string.permission_overlay_description)
         )
     )
 
@@ -127,7 +129,7 @@ fun OnboardingScreen(
                                 }
                             }
                         ) {
-                            Text("Back")
+                            Text(stringResource(R.string.onboarding_back))
                         }
                     } else {
                         Spacer(modifier = Modifier.width(80.dp))
@@ -147,7 +149,10 @@ fun OnboardingScreen(
                         contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
                     ) {
                         Text(
-                            text = if (pagerState.currentPage < pages.size - 1) "Next" else "Get Started",
+                            text = if (pagerState.currentPage < pages.size - 1)
+                                stringResource(R.string.onboarding_next)
+                            else
+                                stringResource(R.string.onboarding_get_started),
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -207,3 +212,4 @@ data class OnboardingPage(
     val title: String,
     val description: String
 )
+

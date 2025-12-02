@@ -20,6 +20,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import id.avium.aviumnotes.R
 import id.avium.aviumnotes.ui.theme.NoteColors
 
 @Composable
@@ -34,7 +36,7 @@ fun ColorPickerDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Choose Color",
+                text = stringResource(R.string.color_picker_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -62,7 +64,7 @@ fun ColorPickerDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(stringResource(R.string.close))
             }
         }
     )
@@ -110,7 +112,7 @@ fun ColorItemCompact(
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Selected",
+                    contentDescription = stringResource(R.string.selected),
                     tint = if (color == NoteColors.White || color == NoteColors.LightYellow)
                         MaterialTheme.colorScheme.primary
                     else

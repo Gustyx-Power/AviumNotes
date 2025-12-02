@@ -113,6 +113,16 @@
     <string name="color_picker_title">Choose Color</string>
     <string name="color_picker_close">Close</string>
 
+    <!-- Floating Bubble -->
+    <string name="floating_channel_name">AviumNotes Floating Bubble</string>
+    <string name="floating_channel_desc">Keep AviumNotes bubble active</string>
+    <string name="floating_notification_text">Tap bubble to view notes</string>
+    <string name="floating_action_stop">Stop</string>
+    <string name="floating_title">My Notes</string>
+    <string name="floating_hide_bubble">Hide bubble</string>
+    <string name="floating_close_list">Close list</string>
+    <string name="floating_empty_subtitle">Create your first note in the app</string>
+
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_appearance">Appearance</string>
@@ -142,12 +152,21 @@
     <string name="settings_import">Import Notes</string>
     <string name="settings_clear_data">Clear All Data</string>
     <string name="settings_storage">Storage Used</string>
+    <string name="settings_export_all_json">Export all notes as JSON</string>
+    <string name="settings_import_from_file">Import notes from file</string>
+    <string name="settings_clear_data_desc">Delete all notes permanently</string>
 
     <string name="settings_about">About</string>
     <string name="settings_version">Version</string>
     <string name="settings_developer">Developer</string>
     <string name="settings_github">GitHub Repository</string>
     <string name="settings_licenses">Open Source Licenses</string>
+    <string name="settings_developer_name">Gustyx-Power</string>
+    <string name="settings_github_desc">View source code</string>
+    <string name="settings_license_name">MIT License</string>
+    <string name="settings_license_toast">AviumNotes is licensed under MIT License
+© 2025 Gustyx-Power</string>
+    <string name="settings_footer_text">Made with Spirit for Avium OS</string>
 
     <string name="clear_data_title">Clear All Data?</string>
     <string name="clear_data_message">This will delete all notes permanently. This action cannot be undone.</string>
@@ -156,8 +175,18 @@
     <!-- Export/Import -->
     <string name="export_success">Exported %d notes successfully</string>
     <string name="export_failed">Export failed: %s</string>
+    <string name="export_failed_simple">Export failed</string>
+    <string name="export_png_success">Exported to Pictures/AviumNotes</string>
+    <string name="export_pdf_success">Exported to Documents/AviumNotes</string>
+    <string name="export_png">Export as PNG</string>
+    <string name="export_pdf">Export as PDF</string>
     <string name="import_success">Imported %d notes successfully</string>
     <string name="import_failed">Import failed: %s</string>
+    <string name="share_failed">Share failed: %s</string>
+
+    <!-- File Basenames -->
+    <string name="file_note_basename">note</string>
+    <string name="file_drawing_basename">drawing</string>
 
     <!-- Toast Messages -->
     <string name="toast_note_saved">Note saved</string>
@@ -179,4 +208,5 @@
     <string name="save">Save</string>
     <string name="share">Share</string>
     <string name="search">Search</string>
+    <string name="selected">Selected</string>
 </resources>

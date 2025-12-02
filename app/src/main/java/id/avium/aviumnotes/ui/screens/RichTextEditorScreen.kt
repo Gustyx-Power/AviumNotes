@@ -120,41 +120,41 @@ fun RichTextEditorScreen(
                     // Export rich text note as PNG
                     val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
                         text = richTextState.annotatedString.text,
-                        title = title.ifEmpty { "Untitled" },
+                        title = title.ifEmpty { context.getString(R.string.note_untitled) },
                         backgroundColor = noteColor.toArgb()
                     )
 
                     val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPng(
                         context,
                         bitmap,
-                        "${title.ifEmpty { "note" }}_${System.currentTimeMillis()}.png"
+                        "${title.ifEmpty { context.getString(R.string.file_note_basename) }}_${System.currentTimeMillis()}.png"
                     )
 
                     if (uri != null) {
-                        Toast.makeText(context, "Exported to Pictures/AviumNotes", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.export_png_success), Toast.LENGTH_LONG).show()
                     } else {
-                        Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.export_failed_simple), Toast.LENGTH_SHORT).show()
                     }
                 },
                 onExportPdf = {
                     // Export rich text note as PDF
                     val bitmap = id.avium.aviumnotes.ui.utils.ExportUtils.createBitmapFromText(
                         text = richTextState.annotatedString.text,
-                        title = title.ifEmpty { "Untitled" },
+                        title = title.ifEmpty { context.getString(R.string.note_untitled) },
                         backgroundColor = noteColor.toArgb()
                     )
 
                     val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPdf(
                         context,
                         bitmap,
-                        title.ifEmpty { "Untitled" },
-                        "${title.ifEmpty { "note" }}_${System.currentTimeMillis()}.pdf"
+                        title.ifEmpty { context.getString(R.string.note_untitled) },
+                        "${title.ifEmpty { context.getString(R.string.file_note_basename) }}_${System.currentTimeMillis()}.pdf"
                     )
 
                     if (uri != null) {
-                        Toast.makeText(context, "Exported to Documents/AviumNotes", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.export_pdf_success), Toast.LENGTH_LONG).show()
                     } else {
-                        Toast.makeText(context, "Export failed", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.export_failed_simple), Toast.LENGTH_SHORT).show()
                     }
                 }
             )
@@ -169,7 +169,7 @@ fun RichTextEditorScreen(
                     onClick = {
                         val updatedNote = Note(
                             id = note?.id ?: 0,
-                            title = title.ifEmpty { "Untitled" },
+                            title = title.ifEmpty { context.getString(R.string.note_untitled) },
                             content = richTextState.toHtml(),
                             color = noteColor.toArgb(),
                             createdAt = note?.createdAt ?: System.currentTimeMillis(),
@@ -186,7 +186,7 @@ fun RichTextEditorScreen(
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     elevation = FloatingActionButtonDefaults.elevation(6.dp),
                     icon = { Icon(Icons.Filled.Check, null) },
-                    text = { Text("Save") }
+                    text = { Text(stringResource(R.string.save)) }
                 )
             }
         }
@@ -205,7 +205,7 @@ fun RichTextEditorScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Rich Text • ${formatDate(note.updatedAt)}",
+                        text = stringResource(R.string.note_modified, formatDate(note.updatedAt)),
                         style = MaterialTheme.typography.labelSmall,
                         color = textColor.copy(alpha = 0.5f)
                     )
@@ -339,15 +339,15 @@ fun RichTextEditorScreen(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             icon = { Icon(Icons.Outlined.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Delete Note?") },
-            text = { Text("This action cannot be undone.") },
+            title = { Text(stringResource(R.string.note_delete_title)) },
+            text = { Text(stringResource(R.string.note_delete_message)) },
             confirmButton = {
                 Button(
                     onClick = { onDeleteNote(); onNavigateBack() },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) { Text("Delete") }
+                ) { Text(stringResource(R.string.note_delete_confirm)) }
             },
-            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.note_delete_cancel)) } }
         )
     }
 
@@ -355,15 +355,15 @@ fun RichTextEditorScreen(
         AlertDialog(
             onDismissRequest = { showDiscardDialog = false },
             icon = { Icon(Icons.Outlined.SaveAs, null) },
-            title = { Text("Unsaved Changes") },
-            text = { Text("Do you want to save before exiting?") },
+            title = { Text(stringResource(R.string.editor_discard_title)) },
+            text = { Text(stringResource(R.string.editor_discard_message)) },
             confirmButton = {
                 Button(
                     onClick = {
                         // Logic save same as FAB
                         val updatedNote = Note(
                             id = note?.id ?: 0,
-                            title = title.ifEmpty { "Untitled" },
+                            title = title.ifEmpty { context.getString(R.string.note_untitled) },
                             content = richTextState.toHtml(),
                             color = noteColor.toArgb(),
                             createdAt = note?.createdAt ?: System.currentTimeMillis(),
@@ -373,10 +373,10 @@ fun RichTextEditorScreen(
                         onSaveNote(updatedNote)
                         onNavigateBack()
                     }
-                ) { Text("Save & Exit") }
+                ) { Text(stringResource(R.string.save)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDiscardDialog = false; onNavigateBack() }, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("Discard") }
+                TextButton(onClick = { showDiscardDialog = false; onNavigateBack() }, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.discard)) }
             }
         )
     }
@@ -412,7 +412,7 @@ fun RichEditorTopBar(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.main_back),
                         tint = textColor
                     )
                 }
@@ -430,7 +430,7 @@ fun RichEditorTopBar(
                 ) {
                     Icon(
                         Icons.Outlined.TextFields,
-                        "Format",
+                        stringResource(R.string.editor_toggle_formatting),
                         tint = if(showFormattingBar) textColor else textColor.copy(alpha=0.6f)
                     )
                 }
@@ -453,7 +453,7 @@ fun RichEditorTopBar(
             if (!isNewNote) {
                 Box {
                     IconButton(onClick = onMoreClick) {
-                        Icon(Icons.Outlined.MoreVert, "More", tint = textColor)
+                        Icon(Icons.Outlined.MoreVert, stringResource(R.string.editor_more), tint = textColor)
                     }
                     DropdownMenu(
                         expanded = showMoreMenu,
@@ -462,18 +462,18 @@ fun RichEditorTopBar(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Export PNG") },
+                            text = { Text(stringResource(R.string.export_png)) },
                             onClick = { onDismissMenu(); onExportPng() },
                             leadingIcon = { Icon(Icons.Outlined.Image, null) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Export PDF") },
+                            text = { Text(stringResource(R.string.export_pdf)) },
                             onClick = { onDismissMenu(); onExportPdf() },
                             leadingIcon = { Icon(Icons.Outlined.PictureAsPdf, null) }
                         )
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         DropdownMenuItem(
-                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                            text = { Text(stringResource(R.string.note_delete_title), color = MaterialTheme.colorScheme.error) },
                             onClick = onDeleteClick,
                             leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) }
                         )
