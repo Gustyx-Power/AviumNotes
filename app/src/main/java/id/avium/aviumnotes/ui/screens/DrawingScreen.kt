@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import id.avium.aviumnotes.R
 import androidx.compose.ui.unit.dp
 import id.avium.aviumnotes.data.local.entity.Note
 import id.avium.aviumnotes.data.preferences.PreferencesManager
@@ -156,11 +157,11 @@ fun DrawingScreen(
                     val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPng(
                         context,
                         bitmap,
-                        "drawing_${System.currentTimeMillis()}.png"
+                        "${context.getString(R.string.file_drawing_basename)}_${System.currentTimeMillis()}.png"
                     )
 
                     if (uri != null) {
-                        android.widget.Toast.makeText(context, "Exported to Pictures/AviumNotes", android.widget.Toast.LENGTH_LONG).show()
+                        android.widget.Toast.makeText(context, context.getString(R.string.export_png_success), android.widget.Toast.LENGTH_LONG).show()
                     }
                 },
                 onExportPdf = {
@@ -189,12 +190,12 @@ fun DrawingScreen(
                     val uri = id.avium.aviumnotes.ui.utils.ExportUtils.exportToPdf(
                         context,
                         bitmap,
-                        note?.title ?: "Drawing",
-                        "drawing_${System.currentTimeMillis()}.pdf"
+                        note?.title ?: context.getString(R.string.drawing_title),
+                        "${context.getString(R.string.file_drawing_basename)}_${System.currentTimeMillis()}.pdf"
                     )
 
                     if (uri != null) {
-                        android.widget.Toast.makeText(context, "Exported to Documents/AviumNotes", android.widget.Toast.LENGTH_LONG).show()
+                        android.widget.Toast.makeText(context, context.getString(R.string.export_pdf_success), android.widget.Toast.LENGTH_LONG).show()
                     }
                 },
                 onDelete = { showDeleteDialog = true }
@@ -254,7 +255,7 @@ fun DrawingScreen(
 
                         val updatedNote = Note(
                             id = note?.id ?: 0,
-                            title = "Drawing",
+                            title = context.getString(R.string.drawing_title),
                             content = "",
                             color = noteColor.hashCode(),
                             createdAt = note?.createdAt ?: System.currentTimeMillis(),
@@ -273,7 +274,7 @@ fun DrawingScreen(
                     shape = RoundedCornerShape(16.dp),
                     elevation = FloatingActionButtonDefaults.elevation(4.dp)
                 ) {
-                    Icon(Icons.Filled.Check, "Save")
+                    Icon(Icons.Filled.Check, stringResource(R.string.save))
                 }
             }
         }
@@ -352,15 +353,15 @@ fun DrawingScreen(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             icon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) },
-            title = { Text("Delete Drawing?") },
-            text = { Text("This action cannot be undone.") },
+            title = { Text(stringResource(R.string.note_delete_title)) },
+            text = { Text(stringResource(R.string.note_delete_message)) },
             confirmButton = {
                 Button(
                     onClick = { onDeleteDrawing(); onNavigateBack() },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) { Text("Delete") }
+                ) { Text(stringResource(R.string.note_delete_confirm)) }
             },
-            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.note_delete_cancel)) } }
         )
     }
 }
@@ -392,7 +393,7 @@ fun DrawingTopBar(
                     modifier = Modifier.size(40.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = textColor)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.main_back), tint = textColor)
                     }
                 }
             }
@@ -401,14 +402,14 @@ fun DrawingTopBar(
             // Undo
             IconButton(onClick = onUndo, enabled = canUndo) {
                 Icon(
-                    Icons.AutoMirrored.Filled.Undo, "Undo",
+                    Icons.AutoMirrored.Filled.Undo, stringResource(R.string.drawing_undo),
                     tint = if(canUndo) textColor else textColor.copy(alpha = 0.3f)
                 )
             }
             // Redo
             IconButton(onClick = onRedo, enabled = canRedo) {
                 Icon(
-                    Icons.AutoMirrored.Filled.Redo, "Redo",
+                    Icons.AutoMirrored.Filled.Redo, stringResource(R.string.drawing_redo),
                     tint = if(canRedo) textColor else textColor.copy(alpha = 0.3f)
                 )
             }
@@ -424,7 +425,7 @@ fun DrawingTopBar(
             // More Menu
             Box {
                 IconButton(onClick = onMoreClick) {
-                    Icon(Icons.Outlined.MoreVert, "More", tint = textColor)
+                    Icon(Icons.Outlined.MoreVert, stringResource(R.string.editor_more), tint = textColor)
                 }
                 DropdownMenu(
                     expanded = showMoreMenu,
@@ -432,18 +433,18 @@ fun DrawingTopBar(
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Export PNG") },
+                        text = { Text(stringResource(R.string.export_png)) },
                         onClick = { onDismissMenu(); onExportPng() },
                         leadingIcon = { Icon(Icons.Outlined.Image, null) }
                     )
                     DropdownMenuItem(
-                        text = { Text("Export PDF") },
+                        text = { Text(stringResource(R.string.export_pdf)) },
                         onClick = { onDismissMenu(); onExportPdf() },
                         leadingIcon = { Icon(Icons.Outlined.PictureAsPdf, null) }
                     )
                     HorizontalDivider()
                     DropdownMenuItem(
-                        text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                        text = { Text(stringResource(R.string.note_delete_title), color = MaterialTheme.colorScheme.error) },
                         onClick = { onDismissMenu(); onDelete() },
                         leadingIcon = { Icon(Icons.Outlined.Delete, null, tint = MaterialTheme.colorScheme.error) }
                     )
@@ -522,7 +523,7 @@ fun DrawingBottomToolbar(
                     onClick = onClearCanvas,
                     colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Icon(Icons.Outlined.DeleteSweep, "Clear Canvas")
+                    Icon(Icons.Outlined.DeleteSweep, stringResource(R.string.drawing_clear))
                 }
             }
 

@@ -14,6 +14,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import id.avium.aviumnotes.R
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -68,7 +69,7 @@ object ExportUtils {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Failed to export PNG: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.export_failed, e.message ?: ""), Toast.LENGTH_SHORT).show()
             null
         }
     }
@@ -135,7 +136,7 @@ object ExportUtils {
             uri
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Failed to export PDF: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.export_failed, e.message ?: ""), Toast.LENGTH_SHORT).show()
             null
         }
     }
@@ -243,17 +244,18 @@ object ExportUtils {
     /**
      * Share file using Android share dialog
      */
-    fun shareFile(context: Context, uri: Uri, mimeType: String, title: String = "Share") {
+    fun shareFile(context: Context, uri: Uri, mimeType: String, title: String? = null) {
         try {
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = mimeType
                 putExtra(Intent.EXTRA_STREAM, uri)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(Intent.createChooser(shareIntent, title))
+            val chooserTitle = title ?: context.getString(R.string.share)
+            context.startActivity(Intent.createChooser(shareIntent, chooserTitle))
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Failed to share: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.share_failed, e.message ?: ""), Toast.LENGTH_SHORT).show()
         }
     }
 }

@@ -210,7 +210,7 @@ fun MainTopBar(
             IconButton(onClick = { onViewModeChange(if (viewMode == "grid") "list" else "grid") }) {
                 Icon(
                     imageVector = if (viewMode == "grid") Icons.Outlined.ViewAgenda else Icons.Outlined.GridView,
-                    contentDescription = "Toggle view"
+                    contentDescription = stringResource(R.string.main_view_mode)
                 )
             }
 
@@ -262,7 +262,7 @@ fun SearchTopBar(query: String, onQueryChange: (String) -> Unit, onCloseClick: (
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onCloseClick) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.main_back))
             }
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -277,7 +277,7 @@ fun SearchTopBar(query: String, onQueryChange: (String) -> Unit, onCloseClick: (
                     value = query,
                     onValueChange = onQueryChange,
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search notes...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.6f)) },
+                    placeholder = { Text(stringResource(R.string.main_search), color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.6f)) },
                     leadingIcon = { Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                     trailingIcon = if (query.isNotEmpty()) {
                         {
@@ -329,7 +329,7 @@ fun EnhancedFab(
                         modifier = Modifier.padding(end = 12.dp)
                     ) {
                         Text(
-                            "Drawing",
+                            stringResource(R.string.editor_drawing),
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelLarge
                         )
@@ -339,7 +339,7 @@ fun EnhancedFab(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                     ) {
-                        Icon(Icons.Outlined.Brush, "Drawing")
+                        Icon(Icons.Outlined.Brush, stringResource(R.string.editor_drawing))
                     }
                 }
 
@@ -352,7 +352,7 @@ fun EnhancedFab(
                         modifier = Modifier.padding(end = 12.dp)
                     ) {
                         Text(
-                            "Text Note",
+                            stringResource(R.string.note_editor_new_note),
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelLarge
                         )
@@ -362,7 +362,7 @@ fun EnhancedFab(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         contentColor = MaterialTheme.colorScheme.onTertiaryContainer
                     ) {
-                        Icon(Icons.Outlined.Edit, "Note")
+                        Icon(Icons.Outlined.Edit, stringResource(R.string.note_editor_new_note))
                     }
                 }
             }
@@ -379,7 +379,7 @@ fun EnhancedFab(
             AnimatedContent(targetState = showOptions, label = "FabIcon") { expanded ->
                 Icon(
                     imageVector = if (expanded) Icons.Filled.Close else Icons.Filled.Add,
-                    contentDescription = if (expanded) "Close" else "Add",
+                    contentDescription = if (expanded) stringResource(R.string.close) else stringResource(R.string.main_add_note),
                     modifier = Modifier.size(32.dp).rotate(if (expanded) 90f else 0f)
                 )
             }
@@ -520,7 +520,7 @@ fun ModernNoteCard(
                     if (note.isPinned) {
                         Icon(
                             imageVector = Icons.Filled.PushPin,
-                            contentDescription = "Pinned",
+                            contentDescription = stringResource(R.string.note_pin),
                             tint = textColor.copy(alpha = 0.8f),
                             modifier = Modifier.size(18.dp).rotate(45f)
                         )
@@ -604,7 +604,7 @@ fun ModernNoteCard(
                             onClick = { showDeleteDialog = true },
                             colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.errorContainer)
                         ) {
-                            Icon(Icons.Outlined.Delete, "Delete", tint = MaterialTheme.colorScheme.onErrorContainer)
+                            Icon(Icons.Outlined.Delete, stringResource(R.string.note_delete), tint = MaterialTheme.colorScheme.onErrorContainer)
                         }
 
                         // Resize Button
@@ -617,7 +617,7 @@ fun ModernNoteCard(
                         ) {
                             Icon(
                                 if(note.spanCount == 1) Icons.Outlined.OpenInFull else Icons.Outlined.CloseFullscreen,
-                                "Resize",
+                                stringResource(R.string.note_expand),
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
@@ -629,7 +629,7 @@ fun ModernNoteCard(
                         ) {
                             Icon(
                                 if(note.isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
-                                "Pin",
+                                stringResource(R.string.note_pin),
                                 tint = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         }

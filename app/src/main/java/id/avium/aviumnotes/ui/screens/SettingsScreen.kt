@@ -102,7 +102,7 @@ fun SettingsScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.main_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -143,7 +143,7 @@ fun SettingsScreen(
                 ModernSettingsItem(
                     icon = Icons.Outlined.ColorLens,
                     title = stringResource(R.string.settings_default_color),
-                    subtitle = NoteColors.getColorName(defaultNoteColor),
+                    subtitle = colorNameFor(defaultNoteColor),
                     onClick = { showColorPicker = true },
                     endContent = {
                         Box(
@@ -218,7 +218,7 @@ fun SettingsScreen(
                 ModernSettingsItem(
                     icon = Icons.Outlined.Upload,
                     title = stringResource(R.string.settings_export),
-                    subtitle = "Export all notes as JSON",
+                    subtitle = stringResource(R.string.settings_export_all_json),
                     onClick = {
                         exportLauncher.launch("aviumnotes_backup_${System.currentTimeMillis()}.json")
                     }
@@ -227,14 +227,14 @@ fun SettingsScreen(
                 ModernSettingsItem(
                     icon = Icons.Outlined.Download,
                     title = stringResource(R.string.settings_import),
-                    subtitle = "Import notes from file",
+                    subtitle = stringResource(R.string.settings_import_from_file),
                     onClick = { importLauncher.launch("application/json") }
                 )
 
                 ModernSettingsItem(
                     icon = Icons.Outlined.DeleteForever,
                     title = stringResource(R.string.settings_clear_data),
-                    subtitle = "Delete all notes permanently",
+                    subtitle = stringResource(R.string.settings_clear_data_desc),
                     onClick = { showClearDataDialog = true },
                     isDestructive = true
                 )
@@ -251,7 +251,7 @@ fun SettingsScreen(
                 ModernSettingsItem(
                     icon = Icons.Outlined.Person,
                     title = stringResource(R.string.settings_developer),
-                    subtitle = "Gustyx-Power",
+                    subtitle = stringResource(R.string.settings_developer_name),
                     onClick = {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Gustyx-Power"))
                         context.startActivity(intent)
@@ -261,7 +261,7 @@ fun SettingsScreen(
                 ModernSettingsItem(
                     icon = Icons.Outlined.Code,
                     title = stringResource(R.string.settings_github),
-                    subtitle = "View source code",
+                    subtitle = stringResource(R.string.settings_github_desc),
                     onClick = {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Gustyx-Power/AviumNotes"))
                         context.startActivity(intent)
@@ -271,11 +271,11 @@ fun SettingsScreen(
                 ModernSettingsItem(
                     icon = Icons.Outlined.Description,
                     title = stringResource(R.string.settings_licenses),
-                    subtitle = "MIT License",
+                    subtitle = stringResource(R.string.settings_license_name),
                     onClick = {
                         Toast.makeText(
                             context,
-                            "AviumNotes is licensed under MIT License\n© 2025 Gustyx-Power",
+                            context.getString(R.string.settings_license_toast),
                             Toast.LENGTH_LONG
                         ).show()
                     }
@@ -285,7 +285,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Made with Spirit for Avium OS",
+                text = stringResource(R.string.settings_footer_text),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
@@ -353,15 +353,32 @@ fun SettingsScreen(
                         }
                     }
                 ) {
-                    Text("Clear", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.main_clear), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showClearDataDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun colorNameFor(colorHash: Int): String {
+    return when (colorHash) {
+        NoteColors.White.hashCode() -> stringResource(R.string.color_white)
+        NoteColors.LightRed.hashCode() -> stringResource(R.string.color_red)
+        NoteColors.LightOrange.hashCode() -> stringResource(R.string.color_orange)
+        NoteColors.LightYellow.hashCode() -> stringResource(R.string.color_yellow)
+        NoteColors.LightGreen.hashCode() -> stringResource(R.string.color_green)
+        NoteColors.LightCyan.hashCode() -> stringResource(R.string.color_cyan)
+        NoteColors.LightBlue.hashCode() -> stringResource(R.string.color_blue)
+        NoteColors.LightPurple.hashCode() -> stringResource(R.string.color_purple)
+        NoteColors.LightPink.hashCode() -> stringResource(R.string.color_pink)
+        NoteColors.LightGray.hashCode() -> stringResource(R.string.color_gray)
+        else -> stringResource(R.string.color_white)
     }
 }
 
@@ -497,11 +514,15 @@ fun ModernThemeDialog(
     onThemeSelected: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val themes = listOf("system" to "System Default", "light" to "Light", "dark" to "Dark")
+    val themes = listOf(
+        "system" to stringResource(R.string.settings_theme_system),
+        "light" to stringResource(R.string.settings_theme_light),
+        "dark" to stringResource(R.string.settings_theme_dark)
+    )
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Outlined.Palette, contentDescription = null) },
-        title = { Text("Choose Theme") },
+        title = { Text(stringResource(R.string.settings_theme)) },
         text = {
             Column {
                 themes.forEach { (value, label) ->
@@ -516,7 +537,7 @@ fun ModernThemeDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } }
     )
 }
 
@@ -526,11 +547,15 @@ fun ModernSortDialog(
     onSortSelected: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val sorts = listOf("date_modified" to "Date Modified", "date_created" to "Date Created", "title" to "Title")
+    val sorts = listOf(
+        "date_modified" to stringResource(R.string.settings_sort_date_modified),
+        "date_created" to stringResource(R.string.settings_sort_date_created),
+        "title" to stringResource(R.string.settings_sort_title)
+    )
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Outlined.Sort, contentDescription = null) },
-        title = { Text("Sort By") },
+        title = { Text(stringResource(R.string.settings_sort_by)) },
         text = {
             Column {
                 sorts.forEach { (value, label) ->
@@ -545,7 +570,7 @@ fun ModernSortDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } }
     )
 }
 
@@ -566,9 +591,9 @@ private suspend fun exportNotes(context: Context, repository: NoteRepository, ur
             jsonArray.put(jsonObject)
         }
         context.contentResolver.openOutputStream(uri)?.use { it.write(jsonArray.toString(2).toByteArray()) }
-        Toast.makeText(context, "Exported ${notes.size} notes", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.export_success, notes.size), Toast.LENGTH_SHORT).show()
     } catch (e: Exception) {
-        Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.export_failed, e.message ?: ""), Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -591,8 +616,8 @@ private suspend fun importNotes(context: Context, repository: NoteRepository, ur
             repository.insertNote(note)
             importedCount++
         }
-        Toast.makeText(context, "Imported $importedCount notes", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.import_success, importedCount), Toast.LENGTH_SHORT).show()
     } catch (e: Exception) {
-        Toast.makeText(context, "Import failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.import_failed, e.message ?: ""), Toast.LENGTH_SHORT).show()
     }
 }

@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -321,10 +322,10 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "AviumNotes Floating Bubble",
+                getString(R.string.floating_channel_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Keep AviumNotes bubble active"
+                description = getString(R.string.floating_channel_desc)
             }
 
             val notificationManager = getSystemService(NotificationManager::class.java)
@@ -349,10 +350,10 @@ class FloatingBubbleService : Service(), LifecycleOwner, ViewModelStoreOwner, Sa
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.app_name))
-            .setContentText("Tap bubble to view notes")
+            .setContentText(getString(R.string.floating_notification_text))
             .setSmallIcon(R.drawable.ic_note)
             .setContentIntent(pendingIntent)
-            .addAction(R.drawable.ic_close, "Stop", stopPendingIntent)
+            .addAction(R.drawable.ic_close, getString(R.string.floating_action_stop), stopPendingIntent)
             .setOngoing(true)
             .build()
     }
@@ -418,7 +419,7 @@ fun FloatingNotesListContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "My Notes",
+                    text = stringResource(R.string.floating_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -427,7 +428,7 @@ fun FloatingNotesListContent(
                     IconButton(onClick = onHideBubble) {
                         Icon(
                             imageVector = Icons.Default.VisibilityOff,
-                            contentDescription = "Hide bubble",
+                            contentDescription = stringResource(R.string.floating_hide_bubble),
                             tint = MaterialTheme.colorScheme.error
                         )
                     }
@@ -435,7 +436,7 @@ fun FloatingNotesListContent(
                     IconButton(onClick = onClose) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close list"
+                            contentDescription = stringResource(R.string.floating_close_list)
                         )
                     }
                 }
@@ -470,13 +471,13 @@ fun FloatingNotesListContent(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "No notes yet",
+                            text = stringResource(R.string.main_empty_notes),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Create your first note in the app",
+                            text = stringResource(R.string.floating_empty_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
@@ -523,7 +524,7 @@ fun FloatingNoteCard(
                 .padding(12.dp)
         ) {
             Text(
-                text = note.title.ifEmpty { "Untitled" },
+                text = note.title.ifEmpty { stringResource(R.string.note_untitled) },
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
