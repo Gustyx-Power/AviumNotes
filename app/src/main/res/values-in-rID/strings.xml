@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- App Name -->
+    <string name="app_name">Notes</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_title">Selamat Datang di Notes</string>
+    <string name="onboarding_subtitle">Catatan Anda tersusun indah</string>
+    <string name="onboarding_description">Abadikan pikiran dengan cepat lewat gelembung mengambang dan atur secara efisien</string>
+    <string name="onboarding_feature_1_title">Tangkap Cepat</string>
+    <string name="onboarding_feature_1_desc">Tulis catatan seketika dari mana saja dengan gelembung mengambang</string>
+    <string name="onboarding_feature_2_title">Atur dengan Mudah</string>
+    <string name="onboarding_feature_2_desc">Kategorikan dan cari catatan Anda tanpa repot</string>
+    <string name="onboarding_feature_3_title">Sinkronisasi Mulus</string>
+    <string name="onboarding_feature_3_desc">Catatan Anda selalu tersedia di seluruh perangkat Avium OS</string>
+    <string name="onboarding_get_started">Mulai</string>
+    <string name="onboarding_skip">Lewati</string>
+    <string name="onboarding_next">Berikutnya</string>
+    <string name="onboarding_back">Kembali</string>
+
+    <!-- Permission -->
+    <string name="permission_overlay_title">Aktifkan Gelembung Mengambang</string>
+    <string name="permission_overlay_description">Untuk memakai gelembung mengambang, kami memerlukan izin tampil di atas aplikasi lain</string>
+    <string name="permission_overlay_button">Beri Izin</string>
+    <string name="permission_overlay_later">Mungkin Nanti</string>
+    <string name="permission_overlay_denied">Izin hamparan diperlukan untuk fitur gelembung mengambang</string>
+
+    <!-- Main Screen -->
+    <string name="main_title">Notes</string>
+    <string name="main_search">Cari catatan</string>
+    <string name="main_add_note">Catatan Baru</string>
+    <string name="main_view_mode">Mode Tampilan</string>
+    <string name="main_menu">Menu</string>
+    <string name="main_floating_bubble">Gelembung Mengambang</string>
+    <string name="main_settings">Pengaturan</string>
+    <string name="main_back">Kembali</string>
+    <string name="main_clear">Bersihkan</string>
+    <string name="main_notes_count">%d catatan</string>
+    <string name="main_pinned">📌 Disematkan</string>
+    <string name="main_others">Lainnya</string>
+    <string name="main_empty_title">Belum ada catatan</string>
+    <string name="main_empty_subtitle">Ketuk + untuk membuat catatan pertama Anda</string>
+    <string name="main_empty_notes">Belum ada catatan</string>
+    <string name="main_empty_notes_desc">Ketuk + untuk membuat catatan pertama Anda</string>
+
+    <!-- Note Card -->
+    <string name="note_untitled">Tanpa Judul</string>
+    <string name="note_pin">Sematkan</string>
+    <string name="note_delete">Hapus</string>
+    <string name="note_chars_count">%d karakter</string>
+    <string name="note_expand">Perluas</string>
+    <string name="note_collapse">Ciutkan</string>
+    <string name="note_delete_title">Hapus Catatan?</string>
+    <string name="note_delete_message">Catatan ini akan dihapus permanen.</string>
+    <string name="note_delete_confirm">Hapus</string>
+    <string name="note_delete_cancel">Batal</string>
+    <string name="note_drawing">Gambar</string>
+
+    <!-- Note Editor -->
+    <string name="note_editor_new_note">Catatan Baru</string>
+    <string name="note_editor_edit_note">Edit Catatan</string>
+    <string name="note_title_hint">Judul</string>
+    <string name="note_content_hint">Mulai ketik catatan Anda…</string>
+    <string name="note_color">Warna Catatan</string>
+    <string name="note_save">Simpan</string>
+    <string name="note_share">Bagikan</string>
+    <string name="note_created">Dibuat: %1$s</string>
+    <string name="note_modified">Diubah: %1$s</string>
+    <string name="note_discard_changes">Buang Perubahan?</string>
+    <string name="note_discard_message">Anda memiliki perubahan yang belum disimpan. Buang sekarang?</string>
+    <string name="note_saved">Catatan disimpan</string>
+    <string name="editor_unsaved">Belum disimpan</string>
+    <string name="editor_color">Warna</string>
+    <string name="editor_more">Lainnya</string>
+    <string name="editor_discard_title">Buang Perubahan?</string>
+    <string name="editor_discard_message">Anda memiliki perubahan yang belum disimpan.</string>
+    <string name="editor_discard_confirm">Buang</string>
+    <string name="editor_keep_editing">Terus Mengedit</string>
+
+    <!-- Rich Text Editor -->
+    <string name="editor_bold">Tebal</string>
+    <string name="editor_italic">Miring</string>
+    <string name="editor_underline">Garis Bawah</string>
+    <string name="editor_strikethrough">Coret</string>
+    <string name="editor_heading">Judul</string>
+    <string name="editor_drawing">Gambar</string>
+    <string name="editor_toggle_formatting">Alihkan Pemformatan</string>
+
+    <!-- Drawing -->
+    <string name="drawing_title">Gambar</string>
+    <string name="drawing_save">Simpan Gambar</string>
+    <string name="drawing_undo">Urungkan</string>
+    <string name="drawing_redo">Ulangi</string>
+    <string name="drawing_clear">Bersihkan</string>
+    <string name="drawing_color">Warna</string>
+    <string name="drawing_stroke_width">Ketebalan Garis</string>
+    <string name="drawing_choose_color">Pilih Warna</string>
+    <string name="drawing_close">Tutup</string>
+    <string name="drawing_stroke_dialog_title">Ketebalan Garis</string>
+    <string name="drawing_stroke_dialog_ok">OK</string>
+
+    <!-- Color Picker -->
+    <string name="color_white">Putih</string>
+    <string name="color_red">Merah</string>
+    <string name="color_orange">Oranye</string>
+    <string name="color_yellow">Kuning</string>
+    <string name="color_green">Hijau</string>
+    <string name="color_cyan">Sian</string>
+    <string name="color_blue">Biru</string>
+    <string name="color_purple">Ungu</string>
+    <string name="color_pink">Merah Muda</string>
+    <string name="color_gray">Abu-abu</string>
+    <string name="color_picker_title">Pilih Warna</string>
+    <string name="color_picker_close">Tutup</string>
+
+    <!-- Floating Bubble -->
+    <string name="floating_channel_name">Gelembung Mengambang Notes</string>
+    <string name="floating_channel_desc">Jaga gelembung Notes tetap aktif</string>
+    <string name="floating_notification_text">Ketuk gelembung untuk melihat catatan</string>
+    <string name="floating_action_stop">Hentikan</string>
+    <string name="floating_title">Catatan Saya</string>
+    <string name="floating_hide_bubble">Sembunyikan gelembung</string>
+    <string name="floating_close_list">Tutup daftar</string>
+    <string name="floating_empty_subtitle">Buat catatan pertama Anda di aplikasi</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Pengaturan</string>
+    <string name="settings_appearance">Tampilan</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_light">Terang</string>
+    <string name="settings_theme_dark">Gelap</string>
+    <string name="settings_theme_system">Bawaan Sistem</string>
+    <string name="settings_sort_by">Urutkan Catatan Berdasarkan</string>
+    <string name="settings_sort_date_modified">Tanggal Diubah</string>
+    <string name="settings_sort_date_created">Tanggal Dibuat</string>
+    <string name="settings_sort_title">Judul</string>
+    <string name="settings_default_color">Warna Catatan Bawaan</string>
+    <string name="settings_show_preview">Tampilkan Pratinjau Catatan</string>
+    <string name="settings_show_preview_desc">Tampilkan cuplikan konten di kartu catatan</string>
+
+    <string name="settings_floating_bubble">Gelembung Mengambang</string>
+    <string name="settings_floating_bubble_desc">Aktifkan pengambilan catatan cepat dari mana saja</string>
+
+    <string name="settings_behavior">Perilaku Catatan</string>
+    <string name="settings_auto_save">Simpan Otomatis</string>
+    <string name="settings_auto_save_desc">Simpan catatan secara otomatis</string>
+    <string name="settings_delete_confirm">Konfirmasi Penghapusan</string>
+    <string name="settings_delete_confirm_desc">Tanya sebelum menghapus catatan</string>
+
+    <string name="settings_data">Data &amp; Cadangan</string>
+    <string name="settings_export">Ekspor Semua Catatan</string>
+    <string name="settings_import">Impor Catatan</string>
+    <string name="settings_clear_data">Hapus Semua Data</string>
+    <string name="settings_storage">Penyimpanan Terpakai</string>
+    <string name="settings_export_all_json">Ekspor semua catatan sebagai JSON</string>
+    <string name="settings_import_from_file">Impor catatan dari file</string>
+    <string name="settings_clear_data_desc">Hapus semua catatan secara permanen</string>
+
+    <string name="settings_about">Tentang</string>
+    <string name="settings_version">Versi</string>
+    <string name="settings_developer">Pengembang</string>
+    <string name="settings_github">Repositori GitHub</string>
+    <string name="settings_licenses">Lisensi Sumber Terbuka</string>
+    <string name="settings_developer_name">Gustyx-Power</string>
+    <string name="settings_github_desc">Lihat kode sumber</string>
+    <string name="settings_license_name">Lisensi MIT</string>
+    <string name="settings_license_toast">Notes dilisensikan di bawah Lisensi MIT
+© 2025 Gustyx-Power</string>
+    <string name="settings_footer_text">Dibuat dengan Semangat untuk Avium OS</string>
+
+    <string name="clear_data_title">Hapus Semua Data?</string>
+    <string name="clear_data_message">Ini akan menghapus semua catatan secara permanen. Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="clear_data_success">Semua data berhasil dihapus</string>
+
+    <!-- Export/Import -->
+    <string name="export_success">Berhasil mengekspor %d catatan</string>
+    <string name="export_failed">Ekspor gagal: %s</string>
+    <string name="export_failed_simple">Ekspor gagal</string>
+    <string name="export_png_success">Diekspor ke Pictures/AviumNotes</string>
+    <string name="export_pdf_success">Diekspor ke Documents/AviumNotes</string>
+    <string name="export_png">Ekspor sebagai PNG</string>
+    <string name="export_pdf">Ekspor sebagai PDF</string>
+    <string name="import_success">Berhasil mengimpor %d catatan</string>
+    <string name="import_failed">Impor gagal: %s</string>
+    <string name="share_failed">Berbagi gagal: %s</string>
+
+    <!-- File Basenames -->
+    <string name="file_note_basename">catatan</string>
+    <string name="file_drawing_basename">gambar</string>
+
+    <!-- Toast Messages -->
+    <string name="toast_note_saved">Catatan disimpan</string>
+    <string name="toast_note_deleted">Catatan dihapus</string>
+    <string name="toast_note_pinned">Catatan disematkan</string>
+    <string name="toast_note_unpinned">Sematan catatan dilepas</string>
+    <string name="toast_drawing_saved">Gambar disimpan</string>
+    <string name="toast_copied_to_clipboard">Disalin ke papan klip</string>
+
+    <!-- Common -->
+    <string name="cancel">Batal</string>
+    <string name="ok">OK</string>
+    <string name="delete">Hapus</string>
+    <string name="edit">Edit</string>
+    <string name="done">Selesai</string>
+    <string name="discard">Buang</string>
+    <string name="keep_editing">Terus Mengedit</string>
+    <string name="close">Tutup</string>
+    <string name="save">Simpan</string>
+    <string name="share">Bagikan</string>
+    <string name="search">Cari</string>
+    <string name="selected" tools:override="true">Terpilih</string>
+</resources>
