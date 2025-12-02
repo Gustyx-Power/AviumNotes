@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App Name -->
-    <string name="app_name">Avium笔记</string>
+    <string name="app_name">Notes</string>
 
     <!-- Onboarding -->
-    <string name="onboarding_title">欢迎使用 AviumNotes</string>
+    <string name="onboarding_title">欢迎使用 Notes</string>
     <string name="onboarding_subtitle">漂亮又有条理的笔记</string>
     <string name="onboarding_description">通过浮动气泡快速记录想法，并高效整理</string>
     <string name="onboarding_feature_1_title">快速记录</string>
@@ -26,7 +26,7 @@
     <string name="permission_overlay_denied">浮动气泡功能需要悬浮窗权限</string>
 
     <!-- Main Screen -->
-    <string name="main_title">Avium 笔记</string>
+    <string name="main_title"> 笔记</string>
     <string name="main_search">搜索笔记</string>
     <string name="main_add_note">新建笔记</string>
     <string name="main_view_mode">视图模式</string>
@@ -114,8 +114,8 @@
     <string name="color_picker_close">关闭</string>
 
     <!-- Floating Bubble -->
-    <string name="floating_channel_name">AviumNotes 浮动气泡</string>
-    <string name="floating_channel_desc">保持 AviumNotes 气泡持续运行</string>
+    <string name="floating_channel_name">Notes 浮动气泡</string>
+    <string name="floating_channel_desc">保持 Notes 气泡持续运行</string>
     <string name="floating_notification_text">点按气泡查看笔记</string>
     <string name="floating_action_stop">停止</string>
     <string name="floating_title">我的笔记</string>
@@ -164,7 +164,7 @@
     <string name="settings_developer_name">Gustyx-Power</string>
     <string name="settings_github_desc">查看源代码</string>
     <string name="settings_license_name">MIT 许可证</string>
-    <string name="settings_license_toast">AviumNotes 使用 MIT 许可证
+    <string name="settings_license_toast">Notes 使用 MIT 许可证
 © 2025 Gustyx-Power</string>
     <string name="settings_footer_text">为 Avium OS 倾注热忱而作</string>
 
