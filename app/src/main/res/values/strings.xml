@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App Name -->
-    <string name="app_name">AviumNotes</string>
+    <string name="app_name">Notes</string>
 
     <!-- Onboarding -->
-    <string name="onboarding_title">Welcome to AviumNotes</string>
+    <string name="onboarding_title">Welcome to Notes</string>
     <string name="onboarding_subtitle">Your notes, organized beautifully</string>
     <string name="onboarding_description">Capture your thoughts quickly with our floating bubble feature and organize them efficiently</string>
     <string name="onboarding_feature_1_title">Quick Capture</string>
@@ -26,7 +26,7 @@
     <string name="permission_overlay_denied">Overlay permission is required for floating bubble feature</string>
 
     <!-- Main Screen -->
-    <string name="main_title">Avium Notes</string>
+    <string name="main_title">Notes</string>
     <string name="main_search">Search notes</string>
     <string name="main_add_note">New Note</string>
     <string name="main_view_mode">View Mode</string>
@@ -114,8 +114,8 @@
     <string name="color_picker_close">Close</string>
 
     <!-- Floating Bubble -->
-    <string name="floating_channel_name">AviumNotes Floating Bubble</string>
-    <string name="floating_channel_desc">Keep AviumNotes bubble active</string>
+    <string name="floating_channel_name">Notes Floating Bubble</string>
+    <string name="floating_channel_desc">Keep Notes bubble active</string>
     <string name="floating_notification_text">Tap bubble to view notes</string>
     <string name="floating_action_stop">Stop</string>
     <string name="floating_title">My Notes</string>
@@ -164,7 +164,7 @@
     <string name="settings_developer_name">Gustyx-Power</string>
     <string name="settings_github_desc">View source code</string>
     <string name="settings_license_name">MIT License</string>
-    <string name="settings_license_toast">AviumNotes is licensed under MIT License
+    <string name="settings_license_toast">Notes is licensed under MIT License
 © 2025 Gustyx-Power</string>
     <string name="settings_footer_text">Made with Spirit for Avium OS</string>
 
