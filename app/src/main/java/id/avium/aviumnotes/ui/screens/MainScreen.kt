@@ -28,6 +28,7 @@ import id.avium.aviumnotes.data.preferences.PreferencesManager
 import id.avium.aviumnotes.ui.components.IosEnhancedFab
 import id.avium.aviumnotes.ui.components.IosNoteCard
 import id.avium.aviumnotes.ui.theme.IosBlack
+import id.avium.aviumnotes.ui.theme.IosPrimaryText
 import id.avium.aviumnotes.ui.theme.IosSearchGray
 import id.avium.aviumnotes.ui.theme.IosTextGray
 
@@ -65,14 +66,14 @@ fun MainScreen(
                         text = "Notes",
                         style = MaterialTheme.typography.displayMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = IosPrimaryText
                         )
                     )
                 },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
                     containerColor = IosBlack,
                     scrolledContainerColor = IosBlack,
-                    titleContentColor = Color.White
+                    titleContentColor = IosPrimaryText
                 ),
                 scrollBehavior = scrollBehavior,
                 actions = {
@@ -129,7 +130,7 @@ fun MainScreen(
                             value = searchQuery,
                             onValueChange = onSearchQueryChange,
                             modifier = Modifier.weight(1f),
-                            textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
+                            textStyle = TextStyle(color = IosPrimaryText, fontSize = 16.sp),
                             singleLine = true,
                             decorationBox = { innerTextField ->
                                 if (searchQuery.isEmpty()) {
