@@ -22,6 +22,7 @@ import id.avium.aviumnotes.R
 import id.avium.aviumnotes.ui.theme.IosBlack
 import id.avium.aviumnotes.ui.theme.IosDarkGray
 import id.avium.aviumnotes.ui.theme.IosPeach
+import id.avium.aviumnotes.ui.theme.IosPrimaryText
 
 @Composable
 fun IosEnhancedFab(
@@ -55,13 +56,13 @@ fun IosEnhancedFab(
                             stringResource(R.string.editor_drawing),
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelLarge,
-                            color = Color.White
+                            color = IosPrimaryText
                         )
                     }
                     SmallFloatingActionButton(
                         onClick = onAddDrawing,
                         containerColor = IosDarkGray,
-                        contentColor = Color.White,
+                        contentColor = IosPrimaryText,
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Outlined.Brush, stringResource(R.string.editor_drawing))
@@ -80,13 +81,13 @@ fun IosEnhancedFab(
                             stringResource(R.string.note_editor_new_note),
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             style = MaterialTheme.typography.labelLarge,
-                            color = Color.White
+                            color = IosPrimaryText
                         )
                     }
                     SmallFloatingActionButton(
                         onClick = onAddNote,
                         containerColor = IosDarkGray,
-                        contentColor = Color.White,
+                        contentColor = IosPrimaryText,
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Outlined.Edit, stringResource(R.string.note_editor_new_note))
@@ -98,7 +99,7 @@ fun IosEnhancedFab(
         ExtendedFloatingActionButton(
             onClick = onToggleOptions,
             containerColor = IosPeach,
-            contentColor = IosBlack,
+            contentColor = Color.Black,
             shape = RoundedCornerShape(16.dp),
             elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
         ) {
