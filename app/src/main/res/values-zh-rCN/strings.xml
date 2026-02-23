@@ -166,6 +166,7 @@
     <string name="settings_license_name">MIT 许可证</string>
     <string name="settings_license_toast">Notes 使用 MIT 许可证
 © 2025 Gustyx-Power</string>
+    <string name="settings_about_desc">一款快速、美观且直观的笔记应用程序，基于原生框架开发，拥有为 Avium OS 绝美设计的 iOS 风格现代界面。</string>
     <string name="settings_footer_text">为 Avium OS 倾注热忱而作</string>
 
     <string name="clear_data_title">清除所有数据？</string>
