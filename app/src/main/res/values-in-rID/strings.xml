@@ -166,6 +166,7 @@
     <string name="settings_license_name">Lisensi MIT</string>
     <string name="settings_license_toast">Notes dilisensikan di bawah Lisensi MIT
 © 2025 Gustyx-Power</string>
+    <string name="settings_about_desc">Aplikasi pencatat yang cepat, indah, dan intuitif yang dirancang secara native dengan antarmuka modern bergaya iOS yang menawan untuk Avium OS.</string>
     <string name="settings_footer_text">Dibuat dengan Semangat untuk Avium OS</string>
 
     <string name="clear_data_title">Hapus Semua Data?</string>
