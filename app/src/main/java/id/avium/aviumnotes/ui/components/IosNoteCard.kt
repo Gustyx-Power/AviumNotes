@@ -99,7 +99,7 @@ fun IosNoteCard(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         ),
-                        color = Color.White,
+                        color = IosPrimaryText,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f).padding(end = 8.dp)
@@ -210,7 +210,7 @@ fun IosNoteCard(
                             Icon(
                                 if(note.isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                                 stringResource(R.string.note_pin),
-                                tint = Color.White
+                                tint = IosPrimaryText
                             )
                         }
                     }
