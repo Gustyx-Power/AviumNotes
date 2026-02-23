@@ -166,6 +166,7 @@
     <string name="settings_license_name">MIT License</string>
     <string name="settings_license_toast">Notes is licensed under MIT License
 © 2025 Gustyx-Power</string>
+    <string name="settings_about_desc">A fast, beautiful, and intuitive note-taking application natively crafted with a gorgeous iOS-style modern interface for Avium OS.</string>
     <string name="settings_footer_text">Made with Spirit for Avium OS</string>
 
     <string name="clear_data_title">Clear All Data?</string>
