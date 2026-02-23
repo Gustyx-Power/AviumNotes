@@ -7,8 +7,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,7 +21,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,9 +28,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import id.avium.aviumnotes.BuildConfig
 import id.avium.aviumnotes.R
 import id.avium.aviumnotes.data.local.AppDatabase
@@ -41,7 +43,7 @@ import id.avium.aviumnotes.data.preferences.PreferencesManager
 import id.avium.aviumnotes.data.repository.NoteRepository
 import id.avium.aviumnotes.service.FloatingBubbleService
 import id.avium.aviumnotes.ui.components.ColorPickerDialog
-import id.avium.aviumnotes.ui.theme.NoteColors
+import id.avium.aviumnotes.ui.theme.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -69,14 +71,13 @@ fun SettingsScreen(
     var showSortDialog by remember { mutableStateOf(false) }
     var showColorPicker by remember { mutableStateOf(false) }
     var showClearDataDialog by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
         uri?.let {
-            coroutineScope.launch {
-                exportNotes(context, repository, uri)
-            }
+            coroutineScope.launch { exportNotes(context, repository, uri) }
         }
     }
 
@@ -84,29 +85,45 @@ fun SettingsScreen(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
-            coroutineScope.launch {
-                importNotes(context, repository, uri)
-            }
+            coroutineScope.launch { importNotes(context, repository, uri) }
         }
     }
 
     Scaffold(
+        containerColor = IosBlack,
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
                         stringResource(R.string.settings_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = IosPrimaryText
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.main_back))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clickable { onNavigateBack() }
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.main_back),
+                            tint = IosPrimaryText
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "Notes",
+                            color = IosPrimaryText,
+                            fontSize = 17.sp
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = IosBlack,
+                    scrolledContainerColor = IosBlack
                 )
             )
         }
@@ -117,57 +134,58 @@ fun SettingsScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            ModernSettingsSection(title = stringResource(R.string.settings_appearance)) {
-                ModernSettingsItem(
+            IosSettingsSection(title = stringResource(R.string.settings_appearance)) {
+                IosSettingsItem(
                     icon = Icons.Outlined.Palette,
                     title = stringResource(R.string.settings_theme),
-                    subtitle = when (themeMode) {
+                    onClick = { showThemeDialog = true },
+                    rightText = when (themeMode) {
                         "light" -> stringResource(R.string.settings_theme_light)
                         "dark" -> stringResource(R.string.settings_theme_dark)
                         else -> stringResource(R.string.settings_theme_system)
-                    },
-                    onClick = { showThemeDialog = true }
+                    }
                 )
 
-                ModernSettingsItem(
-                    icon = Icons.Outlined.Sort,
+                IosSettingsItem(
+                    icon = Icons.Filled.SwapVert,
                     title = stringResource(R.string.settings_sort_by),
-                    subtitle = when (sortBy) {
+                    onClick = { showSortDialog = true },
+                    rightText = when (sortBy) {
                         "date_modified" -> stringResource(R.string.settings_sort_date_modified)
                         "date_created" -> stringResource(R.string.settings_sort_date_created)
                         else -> stringResource(R.string.settings_sort_title)
-                    },
-                    onClick = { showSortDialog = true }
+                    }
                 )
 
-                ModernSettingsItem(
+                IosSettingsItem(
                     icon = Icons.Outlined.ColorLens,
                     title = stringResource(R.string.settings_default_color),
-                    subtitle = colorNameFor(defaultNoteColor),
                     onClick = { showColorPicker = true },
+                    rightText = colorNameFor(defaultNoteColor),
                     endContent = {
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .padding(start = 8.dp)
+                                .size(24.dp)
                                 .clip(CircleShape)
                                 .background(Color(defaultNoteColor))
-                                .padding(1.dp)
                         )
                     }
                 )
 
-                ModernSettingsSwitchItem(
+                IosSettingsSwitchItem(
                     icon = Icons.Outlined.Visibility,
                     title = stringResource(R.string.settings_show_preview),
                     subtitle = stringResource(R.string.settings_show_preview_desc),
                     checked = showNotePreview,
-                    onCheckedChange = { coroutineScope.launch { preferencesManager.setShowNotePreview(it) } }
+                    onCheckedChange = { coroutineScope.launch { preferencesManager.setShowNotePreview(it) } },
+                    showDivider = false
                 )
             }
 
-            ModernSettingsSection(title = stringResource(R.string.settings_floating_bubble)) {
-                ModernSettingsSwitchItem(
-                    icon = Icons.Outlined.BubbleChart,
+            IosSettingsSection(title = stringResource(R.string.settings_floating_bubble)) {
+                IosSettingsSwitchItem(
+                    icon = Icons.Outlined.ChatBubbleOutline,
                     title = stringResource(R.string.settings_floating_bubble),
                     subtitle = stringResource(R.string.settings_floating_bubble_desc),
                     checked = floatingBubbleEnabled,
@@ -192,12 +210,13 @@ fun SettingsScreen(
                                 context.startService(intent)
                             }
                         }
-                    }
+                    },
+                    showDivider = false
                 )
             }
 
-            ModernSettingsSection(title = stringResource(R.string.settings_behavior)) {
-                ModernSettingsSwitchItem(
+            IosSettingsSection(title = "Note Behavior") {
+                IosSettingsSwitchItem(
                     icon = Icons.Outlined.Save,
                     title = stringResource(R.string.settings_auto_save),
                     subtitle = stringResource(R.string.settings_auto_save_desc),
@@ -205,96 +224,69 @@ fun SettingsScreen(
                     onCheckedChange = { coroutineScope.launch { preferencesManager.setAutoSaveEnabled(it) } }
                 )
 
-                ModernSettingsSwitchItem(
-                    icon = Icons.Outlined.Warning,
+                IosSettingsSwitchItem(
+                    icon = Icons.Outlined.ReportProblem,
                     title = stringResource(R.string.settings_delete_confirm),
                     subtitle = stringResource(R.string.settings_delete_confirm_desc),
                     checked = deleteConfirmation,
-                    onCheckedChange = { coroutineScope.launch { preferencesManager.setDeleteConfirmation(it) } }
+                    onCheckedChange = { coroutineScope.launch { preferencesManager.setDeleteConfirmation(it) } },
+                    showDivider = false
                 )
             }
 
-            ModernSettingsSection(title = stringResource(R.string.settings_data)) {
-                ModernSettingsItem(
-                    icon = Icons.Outlined.Upload,
+            IosSettingsSection(title = "Data & Backup") {
+                IosSettingsItem(
+                    icon = Icons.Outlined.IosShare,
                     title = stringResource(R.string.settings_export),
                     subtitle = stringResource(R.string.settings_export_all_json),
-                    onClick = {
-                        exportLauncher.launch("aviumnotes_backup_${System.currentTimeMillis()}.json")
-                    }
+                    onClick = { exportLauncher.launch("aviumnotes_backup_${System.currentTimeMillis()}.json") }
                 )
 
-                ModernSettingsItem(
-                    icon = Icons.Outlined.Download,
+                IosSettingsItem(
+                    icon = Icons.Outlined.FileDownload,
                     title = stringResource(R.string.settings_import),
                     subtitle = stringResource(R.string.settings_import_from_file),
                     onClick = { importLauncher.launch("application/json") }
                 )
 
-                ModernSettingsItem(
-                    icon = Icons.Outlined.DeleteForever,
+                IosSettingsItem(
+                    icon = Icons.Outlined.DeleteOutline,
                     title = stringResource(R.string.settings_clear_data),
                     subtitle = stringResource(R.string.settings_clear_data_desc),
                     onClick = { showClearDataDialog = true },
-                    isDestructive = true
+                    showDivider = false
                 )
             }
 
-            ModernSettingsSection(title = stringResource(R.string.settings_about)) {
-                ModernSettingsItem(
+            IosSettingsSection(title = stringResource(R.string.settings_about)) {
+                IosSettingsItem(
                     icon = Icons.Outlined.Info,
                     title = stringResource(R.string.settings_version),
-                    subtitle = BuildConfig.VERSION_NAME,
-                    onClick = { }
+                    rightText = BuildConfig.VERSION_NAME,
+                    onClick = { showAboutDialog = true }
                 )
 
-                ModernSettingsItem(
-                    icon = Icons.Outlined.Person,
+                IosSettingsItem(
+                    icon = Icons.Outlined.PersonOutline,
                     title = stringResource(R.string.settings_developer),
-                    subtitle = stringResource(R.string.settings_developer_name),
+                    rightText = stringResource(R.string.settings_developer_name),
                     onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Gustyx-Power"))
-                        context.startActivity(intent)
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Gustyx-Power")))
                     }
                 )
 
-                ModernSettingsItem(
-                    icon = Icons.Outlined.Code,
-                    title = stringResource(R.string.settings_github),
-                    subtitle = stringResource(R.string.settings_github_desc),
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Gustyx-Power/AviumNotes"))
-                        context.startActivity(intent)
-                    }
-                )
-
-                ModernSettingsItem(
+                IosSettingsItem(
                     icon = Icons.Outlined.Description,
                     title = stringResource(R.string.settings_licenses),
-                    subtitle = stringResource(R.string.settings_license_name),
+                    rightText = "MIT License",
                     onClick = {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.settings_license_toast),
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+                        Toast.makeText(context, context.getString(R.string.settings_license_toast), Toast.LENGTH_LONG).show()
+                    },
+                    showDivider = false
                 )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
-
-            Text(
-                text = stringResource(R.string.settings_footer_text),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .wrapContentWidth(Alignment.CenterHorizontally)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
@@ -328,9 +320,7 @@ fun SettingsScreen(
         ColorPickerDialog(
             currentColor = Color(defaultNoteColor),
             onColorSelected = { color ->
-                coroutineScope.launch {
-                    preferencesManager.setDefaultNoteColor(color.hashCode())
-                }
+                coroutineScope.launch { preferencesManager.setDefaultNoteColor(color.hashCode()) }
             },
             onDismiss = { showColorPicker = false }
         )
@@ -358,7 +348,70 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showClearDataDialog = false }) {
-                    Text(stringResource(R.string.cancel))
+                    Text(stringResource(R.string.cancel), color = IosTextGray)
+                }
+            }
+        )
+    }
+
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            containerColor = IosDarkGray,
+            title = {  }, // Clean up title to allow centering text perfectly below
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = "App Logo",
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0xFF3DDC84))
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = IosPrimaryText,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Version " + BuildConfig.VERSION_NAME,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = IosTextGray,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_about_desc),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = IosPrimaryText,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                    Button(
+                        onClick = {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Gustyx-Power/AviumNotes")))
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = IosSearchGray),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Outlined.Code, contentDescription = null, tint = IosPrimaryText)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("View Source Code", color = IosPrimaryText)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showAboutDialog = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.close), color = IosPrimaryText, fontWeight = FontWeight.SemiBold)
                 }
             }
         )
@@ -383,22 +436,22 @@ private fun colorNameFor(colorHash: Int): String {
 }
 
 @Composable
-fun ModernSettingsSection(
+fun IosSettingsSection(
     title: String,
-    content: @Composable () -> Unit
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            color = IosPrimaryText,
+            modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
         )
         Surface(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(16.dp),
-            tonalElevation = 1.dp
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = IosDarkGray
         ) {
             Column { content() }
         }
@@ -406,104 +459,125 @@ fun ModernSettingsSection(
 }
 
 @Composable
-fun ModernSettingsItem(
+fun IosSettingsItem(
     icon: ImageVector,
     title: String,
-    subtitle: String,
-    onClick: () -> Unit,
-    isDestructive: Boolean = false,
+    subtitle: String? = null,
+    rightText: String? = null,
+    onClick: (() -> Unit)? = null,
+    showDivider: Boolean = true,
     endContent: @Composable (() -> Unit)? = null
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        color = Color.Transparent
-    ) {
+    Column(modifier = Modifier.fillMaxWidth().clickable(enabled = onClick != null) { onClick?.invoke() }) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(
-                shape = CircleShape,
-                color = if (isDestructive) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = IosPrimaryText,
+                modifier = Modifier.size(24.dp)
+            )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                    color = IosPrimaryText,
+                    fontSize = 17.sp
                 )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = IosTextGray,
+                        fontSize = 13.sp
+                    )
+                }
             }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
             if (endContent != null) {
                 endContent()
-            } else {
+            } else if (rightText != null) {
+                Text(
+                    text = rightText,
+                    color = IosTextGray,
+                    fontSize = 17.sp,
+                    textAlign = TextAlign.End,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+            }
+            
+            if (onClick != null || endContent != null || rightText != null) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = IosTextGray,
+                    modifier = Modifier.size(20.dp)
                 )
             }
+        }
+        if (showDivider) {
+            HorizontalDivider(color = IosSearchGray, modifier = Modifier.padding(start = 56.dp), thickness = 1.dp)
         }
     }
 }
 
 @Composable
-fun ModernSettingsSwitchItem(
+fun IosSettingsSwitchItem(
     icon: ImageVector,
     title: String,
-    subtitle: String,
+    subtitle: String? = null,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    showDivider: Boolean = true
 ) {
-    Surface(modifier = Modifier.fillMaxWidth(), color = Color.Transparent) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = IosPrimaryText,
+                modifier = Modifier.size(24.dp)
+            )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
+                    color = IosPrimaryText,
+                    fontSize = 17.sp
                 )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = IosTextGray,
+                        fontSize = 13.sp
+                    )
+                }
             }
-            Switch(checked = checked, onCheckedChange = onCheckedChange)
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color(0xFF34C759),
+                    uncheckedThumbColor = Color.White,
+                    uncheckedTrackColor = IosSearchGray
+                )
+            )
+        }
+        if (showDivider) {
+            HorizontalDivider(color = IosSearchGray, modifier = Modifier.padding(start = 56.dp), thickness = 1.dp)
         }
     }
 }
@@ -521,8 +595,8 @@ fun ModernThemeDialog(
     )
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Outlined.Palette, contentDescription = null) },
-        title = { Text(stringResource(R.string.settings_theme)) },
+        containerColor = IosDarkGray,
+        title = { Text(stringResource(R.string.settings_theme), color = IosPrimaryText, fontWeight = FontWeight.Bold) },
         text = {
             Column {
                 themes.forEach { (value, label) ->
@@ -530,14 +604,18 @@ fun ModernThemeDialog(
                         modifier = Modifier.fillMaxWidth().clickable { onThemeSelected(value) }.padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        RadioButton(selected = currentTheme == value, onClick = { onThemeSelected(value) })
+                        RadioButton(
+                            selected = currentTheme == value,
+                            onClick = { onThemeSelected(value) },
+                            colors = RadioButtonDefaults.colors(selectedColor = IosPrimaryText, unselectedColor = IosTextGray)
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(label)
+                        Text(label, color = IosPrimaryText)
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close), color = IosPrimaryText) } }
     )
 }
 
@@ -554,8 +632,8 @@ fun ModernSortDialog(
     )
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Outlined.Sort, contentDescription = null) },
-        title = { Text(stringResource(R.string.settings_sort_by)) },
+        containerColor = IosDarkGray,
+        title = { Text(stringResource(R.string.settings_sort_by), color = IosPrimaryText, fontWeight = FontWeight.Bold) },
         text = {
             Column {
                 sorts.forEach { (value, label) ->
@@ -563,14 +641,18 @@ fun ModernSortDialog(
                         modifier = Modifier.fillMaxWidth().clickable { onSortSelected(value) }.padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        RadioButton(selected = currentSort == value, onClick = { onSortSelected(value) })
+                        RadioButton(
+                            selected = currentSort == value,
+                            onClick = { onSortSelected(value) },
+                            colors = RadioButtonDefaults.colors(selectedColor = IosPrimaryText, unselectedColor = IosTextGray)
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(label)
+                        Text(label, color = IosPrimaryText)
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } }
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close), color = IosPrimaryText) } }
     )
 }
 
