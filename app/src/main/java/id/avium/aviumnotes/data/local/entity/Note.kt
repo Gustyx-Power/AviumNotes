@@ -16,5 +16,5 @@ data class Note(
     val spanCount: Int = 1,
     val hasDrawing: Boolean = false,
     val drawingPath: String? = null,
-    val drawingData: String? = null // JSON data untuk edit drawing
+    val drawingData: String? = null
 )

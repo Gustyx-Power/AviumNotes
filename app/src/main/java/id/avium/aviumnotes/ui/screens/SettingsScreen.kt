@@ -365,12 +365,12 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        painter = painterResource(id = R.drawable.ic_logo),
                         contentDescription = "App Logo",
                         modifier = Modifier
                             .size(80.dp)
                             .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0xFF3DDC84))
+                            .background(Color(0x003DDC84))
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
