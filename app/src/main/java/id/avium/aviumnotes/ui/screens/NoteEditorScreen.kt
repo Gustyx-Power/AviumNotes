@@ -49,14 +49,19 @@ fun NoteEditorScreen(
     val defaultNoteColor by preferencesManager.defaultNoteColor.collectAsState(
         initial = NoteColors.White.hashCode()
     )
-
-    var title by remember(note, initialTitle) {
+    var title by rememberSaveable(note, initialTitle) {
         mutableStateOf(initialTitle ?: note?.title ?: "")
     }
-    var content by remember(note, initialContent) {
-        mutableStateOf(initialContent ?: note?.content ?: "")
+    var content by rememberSaveable(note, initialContent) {
+    mutableStateOf(initialContent ?: note?.content ?: "")
     }
-    var noteColor by remember(note, defaultNoteColor) {
+    var noteColor by rememberSaveable(
+        note, defaultNoteColor,
+        stateSaver = Saver(
+            save = { it.toArgb() },
+            restore = { Color(it) }
+        )
+    ) {
         mutableStateOf(Color(note?.color ?: defaultNoteColor))
     }
     var showColorPicker by remember { mutableStateOf(false) }
