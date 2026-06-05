@@ -50,7 +50,7 @@ fun NoteEditorScreen(
         initial = NoteColors.White.hashCode()
     )
     var title by rememberSaveable(note, initialTitle) {
-    mutableStateOf(initialTitle ?: note?.title ?: "")
+        mutableStateOf(initialTitle ?: note?.title ?: "")
     }
     var content by rememberSaveable(note, initialContent) {
     mutableStateOf(initialContent ?: note?.content ?: "")
